@@ -10,6 +10,7 @@ import {
     View,
 } from 'react-native';
 import { MOCK_VENUES, Venue } from '../../constants/mockVenues';
+import { useOrbit } from '../../context/OrbitContext';
 
 const CHECKIN_TAGS = [
   'Great experience',
@@ -31,6 +32,9 @@ export default function VenuesScreen() {
   const [expandedVenueId, setExpandedVenueId] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<SelectedTagsState>({});
   const [note, setNote] = useState('');
+
+  // ⚠️ This was missing in your version
+  const { addCheckin } = useOrbit();
 
   const handleToggleVenue = (id: string) => {
     if (expandedVenueId === id) {
@@ -58,6 +62,15 @@ export default function VenuesScreen() {
       .filter(([_, isOn]) => isOn)
       .map(([label]) => label);
 
+    // 1) Save into the global Orbit history
+    addCheckin({
+      venueId: venue.id,
+      venueName: venue.name,
+      tags: chosenTags,
+      note,
+    });
+
+    // 2) Still log it so you can see what’s happening in the Metro console
     console.log('Mock check-in saved:', {
       venueId: venue.id,
       venueName: venue.name,
@@ -66,7 +79,7 @@ export default function VenuesScreen() {
       timestamp: new Date().toISOString(),
     });
 
-    // For now, just clear the local state as if we "saved"
+    // 3) Clear the local UI
     setSelectedTags({});
     setNote('');
   };
@@ -76,7 +89,10 @@ export default function VenuesScreen() {
 
     return (
       <View style={styles.card}>
-        <Pressable onPress={() => handleToggleVenue(item.id)} style={styles.cardHeader}>
+        <Pressable
+          onPress={() => handleToggleVenue(item.id)}
+          style={styles.cardHeader}
+        >
           <View style={{ flex: 1 }}>
             <Text style={styles.venueName}>{item.name}</Text>
             <Text style={styles.venueMeta}>
