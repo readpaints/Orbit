@@ -1,73 +1,42 @@
 // context/OrbitContext.tsx
-import React, {
-    createContext,
-    useCallback,
-    useContext,
-    useMemo,
-    useState,
-} from 'react';
+import React, { createContext, ReactNode, useContext, useState } from 'react';
 
 export type OrbitCheckin = {
-  id: string;
   venueId: string;
-  venueName: string;
-  tags: string[];
-  note: string;
-  createdAt: string; // ISO timestamp
-};
-
-type AddCheckinInput = {
-  venueId: string;
-  venueName: string;
-  tags: string[];
-  note: string;
+  timestamp: number;
 };
 
 type OrbitContextType = {
   checkins: OrbitCheckin[];
-  addCheckin: (input: AddCheckinInput) => void;
+  addCheckin: (venueId: string) => void;
 };
 
 const OrbitContext = createContext<OrbitContextType | undefined>(undefined);
 
-export const OrbitProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const OrbitProvider = ({ children }: { children: ReactNode }) => {
   const [checkins, setCheckins] = useState<OrbitCheckin[]>([]);
 
-  const addCheckin = useCallback((input: AddCheckinInput) => {
-    setCheckins((prev) => {
-      const newCheckin: OrbitCheckin = {
-        id: `${input.venueId}-${Date.now()}`,
-        venueId: input.venueId,
-        venueName: input.venueName,
-        tags: input.tags,
-        note: input.note.trim(),
-        createdAt: new Date().toISOString(),
-      };
-
-      // Newest first
-      return [newCheckin, ...prev];
-    });
-  }, []);
-
-  const value = useMemo(
-    () => ({
-      checkins,
-      addCheckin,
-    }),
-    [checkins, addCheckin]
-  );
+  const addCheckin = (venueId: string) => {
+    setCheckins((prev) => [
+      ...prev,
+      {
+        venueId,
+        timestamp: Date.now(),
+      },
+    ]);
+  };
 
   return (
-    <OrbitContext.Provider value={value}>{children}</OrbitContext.Provider>
+    <OrbitContext.Provider value={{ checkins, addCheckin }}>
+      {children}
+    </OrbitContext.Provider>
   );
 };
 
-export const useOrbit = (): OrbitContextType => {
+export const useOrbit = () => {
   const ctx = useContext(OrbitContext);
   if (!ctx) {
-    throw new Error('useOrbit must be used within an OrbitProvider');
+    throw new Error('useOrbit must be used inside an OrbitProvider');
   }
   return ctx;
 };
