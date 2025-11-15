@@ -10,6 +10,7 @@ import {
     View,
 } from 'react-native';
 import { MOCK_VENUES, Venue } from '../../constants/mockVenues';
+import { getCurrentOrbitTheme } from '../../constants/theme';
 import { useOrbit } from '../../context/OrbitContext';
 
 const CHECKIN_TAGS = [
@@ -33,8 +34,9 @@ export default function VenuesScreen() {
   const [selectedTags, setSelectedTags] = useState<SelectedTagsState>({});
   const [note, setNote] = useState('');
 
-  // ⚠️ This was missing in your version
   const { addCheckin } = useOrbit();
+  const theme = getCurrentOrbitTheme();
+  const { colors } = theme;
 
   const handleToggleVenue = (id: string) => {
     if (expandedVenueId === id) {
@@ -62,7 +64,6 @@ export default function VenuesScreen() {
       .filter(([_, isOn]) => isOn)
       .map(([label]) => label);
 
-    // 1) Save into the global Orbit history
     addCheckin({
       venueId: venue.id,
       venueName: venue.name,
@@ -70,7 +71,6 @@ export default function VenuesScreen() {
       note,
     });
 
-    // 2) Still log it so you can see what’s happening in the Metro console
     console.log('Mock check-in saved:', {
       venueId: venue.id,
       venueName: venue.name,
@@ -79,7 +79,6 @@ export default function VenuesScreen() {
       timestamp: new Date().toISOString(),
     });
 
-    // 3) Clear the local UI
     setSelectedTags({});
     setNote('');
   };
@@ -88,45 +87,93 @@ export default function VenuesScreen() {
     const isExpanded = expandedVenueId === item.id;
 
     return (
-      <View style={styles.card}>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          },
+        ]}
+      >
         <Pressable
           onPress={() => handleToggleVenue(item.id)}
           style={styles.cardHeader}
         >
           <View style={{ flex: 1 }}>
-            <Text style={styles.venueName}>{item.name}</Text>
-            <Text style={styles.venueMeta}>
+            <Text style={[styles.venueName, { color: colors.text }]}>
+              {item.name}
+            </Text>
+            <Text style={[styles.venueMeta, { color: colors.textMuted }]}>
               {item.category.toUpperCase()} · {item.neighborhood}
             </Text>
-            <Text style={styles.venueVibe}>{item.shortVibe}</Text>
+            <Text style={[styles.venueVibe, { color: colors.text }]}>
+              {item.shortVibe}
+            </Text>
           </View>
-          <Text style={styles.expandIcon}>{isExpanded ? '–' : '+'}</Text>
+          <Text style={[styles.expandIcon, { color: colors.textMuted }]}>
+            {isExpanded ? '–' : '+'}
+          </Text>
         </Pressable>
 
         {isExpanded && (
-          <View style={styles.expandedSection}>
-            <Text style={styles.sectionLabel}>About</Text>
-            <Text style={styles.bodyText}>{item.description}</Text>
+          <View
+            style={[
+              styles.expandedSection,
+              { borderTopColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>
+              About
+            </Text>
+            <Text style={[styles.bodyText, { color: colors.text }]}>
+              {item.description}
+            </Text>
 
-            <Text style={styles.sectionLabel}>Address</Text>
-            <Text style={styles.bodyText}>{item.address}</Text>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>
+              Address
+            </Text>
+            <Text style={[styles.bodyText, { color: colors.textMuted }]}>
+              {item.address}
+            </Text>
 
-            <Text style={styles.sectionLabel}>Hours</Text>
-            <Text style={styles.bodyText}>{item.hours}</Text>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>
+              Hours
+            </Text>
+            <Text style={[styles.bodyText, { color: colors.textMuted }]}>
+              {item.hours}
+            </Text>
 
-            <Text style={styles.sectionLabel}>Vibe tags</Text>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>
+              Vibe tags
+            </Text>
             <View style={styles.tagsRow}>
               {item.tags.map((tag) => (
-                <View key={tag} style={styles.smallTag}>
-                  <Text style={styles.smallTagText}>{tag}</Text>
+                <View
+                  key={tag}
+                  style={[
+                    styles.smallTag,
+                    { backgroundColor: colors.chipBackground },
+                  ]}
+                >
+                  <Text style={[styles.smallTagText, { color: colors.chipText }]}>
+                    {tag}
+                  </Text>
                 </View>
               ))}
             </View>
 
-            <View style={styles.divider} />
+            <View
+              style={[
+                styles.divider,
+                { backgroundColor: colors.border },
+              ]}
+            />
 
-            <Text style={styles.sectionLabel}>Check in</Text>
-            <Text style={styles.helperText}>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>
+              Check in
+            </Text>
+            <Text style={[styles.helperText, { color: colors.textMuted }]}>
               How did this visit feel? Tap one or more.
             </Text>
 
@@ -139,13 +186,22 @@ export default function VenuesScreen() {
                     onPress={() => toggleTag(label)}
                     style={[
                       styles.checkinTag,
-                      isSelected && styles.checkinTagSelected,
+                      {
+                        borderColor: colors.border,
+                        backgroundColor: isSelected
+                          ? colors.accent
+                          : 'transparent',
+                      },
                     ]}
                   >
                     <Text
                       style={[
                         styles.checkinTagText,
-                        isSelected && styles.checkinTagTextSelected,
+                        {
+                          color: isSelected
+                            ? '#FFFFFF'
+                            : colors.text,
+                        },
                       ]}
                     >
                       {label}
@@ -155,8 +211,10 @@ export default function VenuesScreen() {
               })}
             </View>
 
-            <Text style={styles.sectionLabel}>Favorites</Text>
-            <Text style={styles.helperText}>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>
+              Favorites
+            </Text>
+            <Text style={[styles.helperText, { color: colors.textMuted }]}>
               Mark what stood out the most.
             </Text>
 
@@ -169,13 +227,22 @@ export default function VenuesScreen() {
                     onPress={() => toggleTag(label)}
                     style={[
                       styles.favoriteTag,
-                      isSelected && styles.favoriteTagSelected,
+                      {
+                        borderColor: colors.border,
+                        backgroundColor: isSelected
+                          ? colors.accentSoft
+                          : 'transparent',
+                      },
                     ]}
                   >
                     <Text
                       style={[
                         styles.favoriteTagText,
-                        isSelected && styles.favoriteTagTextSelected,
+                        {
+                          color: isSelected
+                            ? colors.text
+                            : colors.textMuted,
+                        },
                       ]}
                     >
                       {label}
@@ -185,8 +252,10 @@ export default function VenuesScreen() {
               })}
             </View>
 
-            <Text style={styles.sectionLabel}>Note</Text>
-            <Text style={styles.helperText}>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>
+              Note
+            </Text>
+            <Text style={[styles.helperText, { color: colors.textMuted }]}>
               Leave a small note to your future self.
             </Text>
 
@@ -194,13 +263,23 @@ export default function VenuesScreen() {
               value={note}
               onChangeText={setNote}
               placeholder="Tonight this place felt like..."
-              placeholderTextColor="#949494"
+              placeholderTextColor={colors.textMuted}
               multiline
-              style={styles.noteInput}
+              style={[
+                styles.noteInput,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.surfaceAlt,
+                  color: colors.text,
+                },
+              ]}
             />
 
             <Pressable
-              style={styles.saveButton}
+              style={[
+                styles.saveButton,
+                { backgroundColor: colors.accent },
+              ]}
               onPress={() => handleMockSaveCheckin(item)}
             >
               <Text style={styles.saveButtonText}>Save check-in (mock)</Text>
@@ -212,9 +291,16 @@ export default function VenuesScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.screenTitle}>Venues</Text>
-      <Text style={styles.screenSubtitle}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <Text style={[styles.screenTitle, { color: colors.text }]}>
+        Venues
+      </Text>
+      <Text style={[styles.screenSubtitle, { color: colors.textMuted }]}>
         Places in Cleopatra’s orbit — and the ones still waiting for her.
       </Text>
 
@@ -238,29 +324,29 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 40,
     paddingHorizontal: 16,
-    backgroundColor: '#050509',
+    backgroundColor: '#050509', // overridden by theme
   },
   screenTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#ffffff', // overridden
     marginBottom: 4,
   },
   screenSubtitle: {
     fontSize: 14,
-    color: '#AAAAAA',
+    color: '#AAAAAA', // overridden
     marginBottom: 16,
   },
   scrollContent: {
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: '#111118',
+    backgroundColor: '#111118', // overridden
     borderRadius: 16,
     padding: 14,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#252535',
+    borderColor: '#252535', // overridden
   },
   cardHeader: {
     flexDirection: 'row',
@@ -269,39 +355,39 @@ const styles = StyleSheet.create({
   venueName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#ffffff', // overridden
     marginBottom: 2,
   },
   venueMeta: {
     fontSize: 12,
-    color: '#888888',
+    color: '#888888', // overridden
     marginBottom: 4,
   },
   venueVibe: {
     fontSize: 13,
-    color: '#CCCCCC',
+    color: '#CCCCCC', // overridden
   },
   expandIcon: {
     fontSize: 22,
-    color: '#888888',
+    color: '#888888', // overridden
     paddingLeft: 8,
   },
   expandedSection: {
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#252535',
+    borderTopColor: '#252535', // overridden
     paddingTop: 12,
   },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#DDDDDD',
+    color: '#DDDDDD', // overridden
     marginTop: 8,
     marginBottom: 4,
   },
   bodyText: {
     fontSize: 13,
-    color: '#CFCFCF',
+    color: '#CFCFCF', // overridden
   },
   tagsRow: {
     flexDirection: 'row',
@@ -313,20 +399,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: '#222233',
+    backgroundColor: '#222233', // overridden
   },
   smallTagText: {
     fontSize: 11,
-    color: '#CFCFFF',
+    color: '#CFCFFF', // overridden
   },
   divider: {
     height: 1,
-    backgroundColor: '#252535',
+    backgroundColor: '#252535', // overridden
     marginVertical: 10,
   },
   helperText: {
     fontSize: 12,
-    color: '#909090',
+    color: '#909090', // overridden
     marginBottom: 4,
   },
   checkinTag: {
@@ -334,60 +420,44 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#44445A',
+    borderColor: '#44445A', // overridden
     marginBottom: 6,
-  },
-  checkinTagSelected: {
-    backgroundColor: '#F5C543',
-    borderColor: '#F5C543',
   },
   checkinTagText: {
     fontSize: 12,
-    color: '#E5E5E5',
-  },
-  checkinTagTextSelected: {
-    color: '#1A1500',
-    fontWeight: '600',
+    color: '#E5E5E5', // overridden
   },
   favoriteTag: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#6A4455',
+    borderColor: '#6A4455', // overridden
     marginBottom: 6,
-  },
-  favoriteTagSelected: {
-    backgroundColor: '#E46E8C',
-    borderColor: '#E46E8C',
   },
   favoriteTagText: {
     fontSize: 12,
-    color: '#EBC7D1',
-  },
-  favoriteTagTextSelected: {
-    color: '#140006',
-    fontWeight: '600',
+    color: '#EBC7D1', // overridden
   },
   noteInput: {
     marginTop: 4,
     minHeight: 70,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#333344',
+    borderColor: '#333344', // overridden
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 13,
-    color: '#FFFFFF',
+    color: '#FFFFFF', // overridden
     textAlignVertical: 'top',
-    backgroundColor: '#0D0D15',
+    backgroundColor: '#0D0D15', // overridden
   },
   saveButton: {
     marginTop: 10,
     paddingVertical: 10,
     borderRadius: 999,
     alignItems: 'center',
-    backgroundColor: '#3C82F6',
+    backgroundColor: '#3C82F6', // overridden
   },
   saveButtonText: {
     fontSize: 14,

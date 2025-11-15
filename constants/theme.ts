@@ -2,79 +2,31 @@
 
 export type TimeOfDay = 'morning' | 'midday' | 'afternoon' | 'evening' | 'night';
 
-export type OrbitTheme = {
+export type OrbitColors = {
   background: string;
-  cardBackground: string;
-  cardBorder: string;
-  textPrimary: string;
-  textSecondary: string;
+  surface: string;
+  surfaceAlt: string;
+  text: string;
   textMuted: string;
   accent: string;
-  tagBackground: string;
-  tagText: string;
+  accentSoft: string;
+  accentStrong: string;
+  border: string;
+  chipBackground: string;
+  chipText: string;
+  tabBarBackground: string;
+  tabBarBorder: string;
 };
 
-const THEMES: Record<TimeOfDay, OrbitTheme> = {
-  morning: {
-    // TODO: replace these with your chosen palette
-    background: '#F5F4FF',
-    cardBackground: '#FFFFFF',
-    cardBorder: '#E0DEFF',
-    textPrimary: '#171123',
-    textSecondary: '#555066',
-    textMuted: '#8D88A0',
-    accent: '#FFB347',
-    tagBackground: '#EFE9FF',
-    tagText: '#4E3FB8',
-  },
-  midday: {
-    background: '#FFFFFF',
-    cardBackground: '#F7F7FB',
-    cardBorder: '#E0E0F0',
-    textPrimary: '#151515',
-    textSecondary: '#505060',
-    textMuted: '#9090A0',
-    accent: '#3C82F6',
-    tagBackground: '#E3EEFF',
-    tagText: '#2153B8',
-  },
-  afternoon: {
-    background: '#FFF7EC',
-    cardBackground: '#FFF1DD',
-    cardBorder: '#FFD6A3',
-    textPrimary: '#291400',
-    textSecondary: '#7A4B1A',
-    textMuted: '#AA7A47',
-    accent: '#F59E0B',
-    tagBackground: '#FFE6B8',
-    tagText: '#7A4B1A',
-  },
-  evening: {
-    background: '#050509',
-    cardBackground: '#111118',
-    cardBorder: '#252535',
-    textPrimary: '#FFFFFF',
-    textSecondary: '#AAAAAA',
-    textMuted: '#777788',
-    accent: '#F97316',
-    tagBackground: '#222233',
-    tagText: '#CFCFFF',
-  },
-  night: {
-    background: '#02020A',
-    cardBackground: '#070713',
-    cardBorder: '#1A1A2B',
-    textPrimary: '#F5F5FF',
-    textSecondary: '#A4A4C4',
-    textMuted: '#6F6F8C',
-    accent: '#A855F7',
-    tagBackground: '#18182A',
-    tagText: '#D5C6FF',
-  },
+export type OrbitTheme = {
+  name: string;
+  timeOfDay: TimeOfDay;
+  colors: OrbitColors;
+  gradient: [string, string];
 };
 
 export const getTimeOfDay = (date: Date = new Date()): TimeOfDay => {
-  const hour = date.getHours();
+  const hour = date.getHours(); // 0–23, device local time
 
   if (hour >= 5 && hour < 11) return 'morning';
   if (hour >= 11 && hour < 14) return 'midday';
@@ -83,7 +35,118 @@ export const getTimeOfDay = (date: Date = new Date()): TimeOfDay => {
   return 'night';
 };
 
-export const getCurrentTheme = (): OrbitTheme => {
-  const tod = getTimeOfDay();
-  return THEMES[tod];
+export const themesByTimeOfDay: Record<TimeOfDay, OrbitTheme> = {
+  morning: {
+    name: 'Morning Glow',
+    timeOfDay: 'morning',
+    colors: {
+      // soft warm + high contrast text
+      background: '#FFF7ED',       // warm, peachy
+      surface: '#FFFBEB',          // light warm card
+      surfaceAlt: '#FDEAD7',
+      text: '#1F2933',
+      textMuted: '#6B7280',
+      accent: '#EA580C',           // warm orange
+      accentSoft: '#FED7AA',
+      accentStrong: '#C2410C',
+      border: '#FED7AA',
+      chipBackground: '#FED7AA',
+      chipText: '#7C2D12',
+      tabBarBackground: '#FFFBEB',
+      tabBarBorder: '#FED7AA',
+    },
+    gradient: ['#FFEDD5', '#FEF3C7'],
+  },
+  midday: {
+    name: 'Midday Clear',
+    timeOfDay: 'midday',
+    colors: {
+      // bright neutral + blue accent
+      background: '#F9FAFB',
+      surface: '#FFFFFF',
+      surfaceAlt: '#F3F4F6',
+      text: '#111827',
+      textMuted: '#6B7280',
+      accent: '#2563EB',           // blue
+      accentSoft: '#DBEAFE',
+      accentStrong: '#1D4ED8',
+      border: '#E5E7EB',
+      chipBackground: '#DBEAFE',
+      chipText: '#1E3A8A',
+      tabBarBackground: '#FFFFFF',
+      tabBarBorder: '#E5E7EB',
+    },
+    gradient: ['#EFF6FF', '#FFFFFF'],
+  },
+  afternoon: {
+    name: 'Golden Afternoon',
+    timeOfDay: 'afternoon',
+    colors: {
+      background: '#FEF3C7',       // soft golden
+      surface: '#FFFBEB',
+      surfaceAlt: '#FDE68A',
+      text: '#1F2933',
+      textMuted: '#6B7280',
+      accent: '#D97706',           // amber
+      accentSoft: '#FDE68A',
+      accentStrong: '#B45309',
+      border: '#FACC15',
+      chipBackground: '#FDE68A',
+      chipText: '#78350F',
+      tabBarBackground: '#FFFBEB',
+      tabBarBorder: '#FACC15',
+    },
+    gradient: ['#FFF7ED', '#FEF3C7'],
+  },
+  evening: {
+    name: 'Evening Dusk',
+    timeOfDay: 'evening',
+    colors: {
+      background: '#020617',       // near-black navy
+      surface: '#020617',
+      surfaceAlt: '#0F172A',
+      text: '#E5E7EB',
+      textMuted: '#9CA3AF',
+      accent: '#F97316',           // warm orange pop
+      accentSoft: '#4B5563',
+      accentStrong: '#FB923C',
+      border: '#1F2937',
+      chipBackground: '#111827',
+      chipText: '#F9FAFB',
+      tabBarBackground: '#020617',
+      tabBarBorder: '#1F2937',
+    },
+    gradient: ['#020617', '#0F172A'],
+  },
+  night: {
+    name: 'Midnight Orbit',
+    timeOfDay: 'night',
+    colors: {
+      background: '#020617',       // deep dark
+      surface: '#020617',
+      surfaceAlt: '#020617',
+      text: '#E5E7EB',
+      textMuted: '#9CA3AF',
+      accent: '#22D3EE',           // cyan / neon-y
+      accentSoft: '#0E7490',
+      accentStrong: '#06B6D4',
+      border: '#111827',
+      chipBackground: '#111827',
+      chipText: '#E5E7EB',
+      tabBarBackground: '#020617',
+      tabBarBorder: '#0F172A',
+    },
+    gradient: ['#020617', '#020617'],
+  },
+};
+
+export const getThemeForTime = (date: Date = new Date()): OrbitTheme => {
+  const tod = getTimeOfDay(date);
+  return themesByTimeOfDay[tod];
+};
+
+// Convenience helper for components.
+// Call this in your screens/layouts at render time.
+export const getCurrentOrbitTheme = (): OrbitTheme => {
+  return getThemeForTime(new Date());
 };

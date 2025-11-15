@@ -1,6 +1,7 @@
 // app/(tabs)/index.tsx
 import React from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { getCurrentOrbitTheme, OrbitColors } from '../../constants/theme';
 import { OrbitCheckin, useOrbit } from '../../context/OrbitContext';
 
 const formatTime = (iso: string) => {
@@ -18,40 +19,81 @@ const formatTime = (iso: string) => {
   return date.toLocaleDateString();
 };
 
-const EmptyOrbit = () => (
-  <View style={styles.emptyState}>
-    <Text style={styles.emptyTitle}>Your orbit is quiet… for now.</Text>
-    <Text style={styles.emptyBody}>
+const EmptyOrbit = ({ colors }: { colors: OrbitColors }) => (
+  <View
+    style={[
+      styles.emptyState,
+      {
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceAlt,
+      },
+    ]}
+  >
+    <Text style={[styles.emptyTitle, { color: colors.text }]}>
+      Your orbit is quiet… for now.
+    </Text>
+    <Text style={[styles.emptyBody, { color: colors.textMuted }]}>
       Visit a place on the Venues tab and check in. The story of your orbit
       will start appearing here.
     </Text>
   </View>
 );
 
-const CheckinCard = ({ checkin }: { checkin: OrbitCheckin }) => {
+const CheckinCard = ({
+  checkin,
+  colors,
+}: {
+  checkin: OrbitCheckin;
+  colors: OrbitColors;
+}) => {
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{checkin.venueName}</Text>
-      <Text style={styles.cardMeta}>{formatTime(checkin.createdAt)}</Text>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      <Text style={[styles.cardTitle, { color: colors.text }]}>
+        {checkin.venueName}
+      </Text>
+      <Text style={[styles.cardMeta, { color: colors.textMuted }]}>
+        {formatTime(checkin.createdAt)}
+      </Text>
 
       {checkin.tags.length > 0 && (
         <View style={styles.tagsRow}>
           {checkin.tags.map((tag) => (
-            <View key={tag} style={styles.tagPill}>
-              <Text style={styles.tagText}>{tag}</Text>
+            <View
+              key={tag}
+              style={[
+                styles.tagPill,
+                { backgroundColor: colors.chipBackground },
+              ]}
+            >
+              <Text style={[styles.tagText, { color: colors.chipText }]}>
+                {tag}
+              </Text>
             </View>
           ))}
         </View>
       )}
 
       {checkin.note ? (
-        <Text style={styles.cardNote}>
+        <Text style={[styles.cardNote, { color: colors.text }]}>
           {checkin.note.length > 180
             ? `${checkin.note.slice(0, 180)}…`
             : checkin.note}
         </Text>
       ) : (
-        <Text style={styles.cardNoteMuted}>
+        <Text
+          style={[
+            styles.cardNoteMuted,
+            { color: colors.textMuted },
+          ]}
+        >
           No note this time — just a feeling she wanted to remember.
         </Text>
       )}
@@ -96,40 +138,78 @@ const SEED_ORBITS: SeedOrbit[] = [
   },
 ];
 
-const SeedOrbitCard = ({ orbit }: { orbit: SeedOrbit }) => {
+const SeedOrbitCard = ({
+  orbit,
+  colors,
+}: {
+  orbit: SeedOrbit;
+  colors: OrbitColors;
+}) => {
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{orbit.title}</Text>
-      <Text style={styles.cardMeta}>{orbit.locationLine}</Text>
-      <Text style={styles.seedStatus}>{orbit.status}</Text>
-      <Text style={styles.cardNote}>{orbit.description}</Text>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      <Text style={[styles.cardTitle, { color: colors.text }]}>
+        {orbit.title}
+      </Text>
+      <Text style={[styles.cardMeta, { color: colors.textMuted }]}>
+        {orbit.locationLine}
+      </Text>
+      <Text style={[styles.seedStatus, { color: colors.accent }]}>
+        {orbit.status}
+      </Text>
+      <Text style={[styles.cardNote, { color: colors.text }]}>
+        {orbit.description}
+      </Text>
     </View>
   );
 };
 
 export default function HomeScreen() {
   const { checkins } = useOrbit();
+  const theme = getCurrentOrbitTheme();
+  const { colors, name: themeName } = theme;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.appTitle}>Orbit</Text>
-      <Text style={styles.appTagline}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <Text style={[styles.appTitle, { color: colors.text }]}>Orbit</Text>
+      <Text style={[styles.appTagline, { color: colors.textMuted }]}>
         The places you return to, and what they mean.
       </Text>
 
+      {/* Tiny mode hint – optional, remove if you don’t want it */}
+      <Text style={[styles.modeHint, { color: colors.textMuted }]}>
+        {themeName}
+      </Text>
+
       {/* Live, real check-ins */}
-      <Text style={styles.sectionTitle}>Your Orbit</Text>
-      <Text style={styles.sectionSubtitle}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        Your Orbit
+      </Text>
+      <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
         Cleopatra’s recent check-ins, across the city.
       </Text>
 
       {checkins.length === 0 ? (
-        <EmptyOrbit />
+        <EmptyOrbit colors={colors} />
       ) : (
         <FlatList
           data={checkins}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <CheckinCard checkin={item} />}
+          renderItem={({ item }) => (
+            <CheckinCard checkin={item} colors={colors} />
+          )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
@@ -137,13 +217,15 @@ export default function HomeScreen() {
 
       {/* Seed / suggested orbits */}
       <View style={styles.seedSection}>
-        <Text style={styles.sectionTitle}>Suggested Orbits</Text>
-        <Text style={styles.sectionSubtitle}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          Suggested Orbits
+        </Text>
+        <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
           Places nearby that might become part of your pattern.
         </Text>
 
         {SEED_ORBITS.map((orbit) => (
-          <SeedOrbitCard key={orbit.id} orbit={orbit} />
+          <SeedOrbitCard key={orbit.id} orbit={orbit} colors={colors} />
         ))}
       </View>
     </View>
@@ -155,49 +237,53 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 40,
     paddingHorizontal: 16,
-    backgroundColor: '#050509',
+    backgroundColor: '#050509', // overridden by theme
   },
   appTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#ffffff', // overridden by theme
   },
   appTagline: {
     fontSize: 14,
-    color: '#AAAAAA',
+    color: '#AAAAAA', // overridden by theme
     marginTop: 4,
-    marginBottom: 20,
+    marginBottom: 4,
+  },
+  modeHint: {
+    fontSize: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#FFFFFF', // overridden by theme
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#9A9AA5',
+    color: '#9A9AA5', // overridden by theme
     marginBottom: 12,
   },
   listContent: {
     paddingBottom: 16,
   },
   card: {
-    backgroundColor: '#111118',
+    backgroundColor: '#111118', // overridden by theme
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#252535',
+    borderColor: '#252535', // overridden by theme
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#FFFFFF', // overridden by theme
     marginBottom: 2,
   },
   cardMeta: {
     fontSize: 12,
-    color: '#888888',
+    color: '#888888', // overridden by theme
     marginBottom: 4,
   },
   tagsRow: {
@@ -210,19 +296,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: '#222233',
+    backgroundColor: '#222233', // overridden by theme
   },
   tagText: {
     fontSize: 11,
-    color: '#CFCFFF',
+    color: '#CFCFFF', // overridden by theme
   },
   cardNote: {
     fontSize: 13,
-    color: '#E0E0E0',
+    color: '#E0E0E0', // overridden by theme
   },
   cardNoteMuted: {
     fontSize: 13,
-    color: '#777788',
+    color: '#777788', // overridden by theme
     fontStyle: 'italic',
   },
   emptyState: {
@@ -230,18 +316,18 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#252535',
-    backgroundColor: '#0C0C14',
+    borderColor: '#252535', // overridden
+    backgroundColor: '#0C0C14', // overridden
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#FFFFFF', // overridden
     marginBottom: 6,
   },
   emptyBody: {
     fontSize: 13,
-    color: '#B0B0C0',
+    color: '#B0B0C0', // overridden
   },
   seedSection: {
     marginTop: 24,
@@ -249,7 +335,7 @@ const styles = StyleSheet.create({
   },
   seedStatus: {
     fontSize: 12,
-    color: '#B8FFCB',
+    color: '#B8FFCB', // overridden
     fontWeight: '600',
     marginBottom: 4,
   },

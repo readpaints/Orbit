@@ -1,45 +1,84 @@
-import { PropsWithChildren, useState } from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+// components/ui/collapsible.tsx
+import React, { PropsWithChildren, useState } from 'react';
+import {
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  StyleSheet,
+  UIManager,
+} from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
+// Enable smooth expand / collapse animation on Android
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+type CollapsibleProps = PropsWithChildren<{
+  title: string;
+}>;
+
+export function Collapsible({ children, title }: CollapsibleProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const theme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? 'light';
+
+  // Simple hard-coded icon colors so we don't rely on the old Colors object
+  const iconColor = colorScheme === 'light' ? '#687076' : '#9BA1A6';
+
+  const handlePress = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsOpen((prev) => !prev);
+  };
 
   return (
-    <ThemedView>
-      <TouchableOpacity
-        style={styles.heading}
-        onPress={() => setIsOpen((value) => !value)}
-        activeOpacity={0.8}>
+    <ThemedView style={styles.container}>
+      <Pressable style={styles.header} onPress={handlePress}>
+        <ThemedText type="subtitle">{title}</ThemedText>
+
         <IconSymbol
           name="chevron.right"
           size={18}
           weight="medium"
-          color={theme === 'light' ? Colors.light.icon : Colors.dark.icon}
+          color={iconColor}
           style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
         />
+      </Pressable>
 
-        <ThemedText type="defaultSemiBold">{title}</ThemedText>
-      </TouchableOpacity>
-      {isOpen && <ThemedView style={styles.content}>{children}</ThemedView>}
+      {isOpen && (
+        <ThemedView style={styles.content}>
+          {children}
+        </ThemedView>
+      )}
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  heading: {
+  container: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 16,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
   },
   content: {
-    marginTop: 6,
-    marginLeft: 24,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
 });
+
+export default Collapsible;

@@ -1,11 +1,32 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router';
+import React from 'react';
+import { getCurrentOrbitTheme } from '../../constants/theme';
 import { OrbitProvider } from '../../context/OrbitContext';
 
 export default function TabsLayout() {
+  const theme = getCurrentOrbitTheme();
+  const { colors } = theme;
+
   return (
     <OrbitProvider>
-      <Tabs>
+      <Tabs
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: colors.surface,
+          },
+          headerTitleStyle: {
+            color: colors.text,
+          },
+          headerShadowVisible: false,
+          tabBarStyle: {
+            backgroundColor: colors.tabBarBackground,
+            borderTopColor: colors.tabBarBorder,
+          },
+          tabBarActiveTintColor: colors.accent,
+          tabBarInactiveTintColor: colors.textMuted,
+        }}
+      >
         <Tabs.Screen
           name="index"
           options={{
