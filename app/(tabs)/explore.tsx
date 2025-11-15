@@ -5,21 +5,12 @@ import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Collapsible } from '@/components/ui/collapsible';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 
 export default function ExploreScreen() {
   return (
     <ParallaxScrollView
-      // Back to the safe header config from the Expo template
       headerBackgroundColor="dark"
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }
+      // 🔥 No headerImage — clean, minimal Explore screen
     >
       <ThemedView style={styles.container}>
         <ThemedText type="title">Explore Orbit</ThemedText>
@@ -54,11 +45,6 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    position: 'absolute',
-    bottom: -40,
-    right: 0,
-  },
   container: {
     paddingHorizontal: 16,
     paddingVertical: 24,
