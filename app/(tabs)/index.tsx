@@ -1,342 +1,396 @@
 // app/(tabs)/index.tsx
-import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { getCurrentOrbitTheme, OrbitColors } from '../../constants/theme';
-import { OrbitCheckin, useOrbit } from '../../context/OrbitContext';
+import { Link } from 'expo-router';
+import React, { useMemo } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
 
-const formatTime = (iso: string) => {
-  const date = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.round(diffMs / 60000);
+import { OrbitHeader } from '@/components/OrbitHeader';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { MOOD_COLORS, PALETTE } from '@/constants/palette';
+import { VENUES } from '@/constants/venues';
+import { useOrbit } from '@/context/OrbitContext';
 
-  if (diffMin < 1) return 'Just now';
-  if (diffMin < 60) return `${diffMin} min ago`;
+const HOME_MOODS = [
+  'soft',
+  'curious',
+  'electric',
+  'quiet',
+  'cozy',
+  'reflective',
+  'wild',
+] as const;
 
-  const diffHours = Math.round(diffMin / 60);
-  if (diffHours < 24) return `${diffHours} hr${diffHours === 1 ? '' : 's'} ago`;
-
-  return date.toLocaleDateString();
-};
-
-const EmptyOrbit = ({ colors }: { colors: OrbitColors }) => (
-  <View
-    style={[
-      styles.emptyState,
-      {
-        borderColor: colors.border,
-        backgroundColor: colors.surfaceAlt,
-      },
-    ]}
-  >
-    <Text style={[styles.emptyTitle, { color: colors.text }]}>
-      Your orbit is quiet… for now.
-    </Text>
-    <Text style={[styles.emptyBody, { color: colors.textMuted }]}>
-      Visit a place on the Venues tab and check in. The story of your orbit
-      will start appearing here.
-    </Text>
-  </View>
-);
-
-const CheckinCard = ({
-  checkin,
-  colors,
-}: {
-  checkin: OrbitCheckin;
-  colors: OrbitColors;
-}) => {
-  return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-        },
-      ]}
-    >
-      <Text style={[styles.cardTitle, { color: colors.text }]}>
-        {checkin.venueName}
-      </Text>
-      <Text style={[styles.cardMeta, { color: colors.textMuted }]}>
-        {formatTime(checkin.createdAt)}
-      </Text>
-
-      {checkin.tags.length > 0 && (
-        <View style={styles.tagsRow}>
-          {checkin.tags.map((tag) => (
-            <View
-              key={tag}
-              style={[
-                styles.tagPill,
-                { backgroundColor: colors.chipBackground },
-              ]}
-            >
-              <Text style={[styles.tagText, { color: colors.chipText }]}>
-                {tag}
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {checkin.note ? (
-        <Text style={[styles.cardNote, { color: colors.text }]}>
-          {checkin.note.length > 180
-            ? `${checkin.note.slice(0, 180)}…`
-            : checkin.note}
-        </Text>
-      ) : (
-        <Text
-          style={[
-            styles.cardNoteMuted,
-            { color: colors.textMuted },
-          ]}
-        >
-          No note this time — just a feeling she wanted to remember.
-        </Text>
-      )}
-    </View>
-  );
-};
-
-/** Seed / suggested orbits */
-
-type SeedOrbit = {
-  id: string;
-  title: string;
-  locationLine: string;
-  status: string;
-  description: string;
-};
-
-const SEED_ORBITS: SeedOrbit[] = [
-  {
-    id: 'seed-1',
-    title: 'Museo del Prado – Evening Orbit',
-    locationLine: 'Madrid · Evenings · Today 18:30',
-    status: 'Active orbit',
-    description:
-      'A recurring evening loop through your favorite galleries. Track how often you return here.',
-  },
-  {
-    id: 'seed-2',
-    title: 'Retiro Park – Walk + Notes',
-    locationLine: 'Parque del Retiro · Mornings · Most weekdays',
-    status: 'Core orbit',
-    description:
-      'One of your main movement patterns. Great place to jot reflections and notice mood shifts.',
-  },
-  {
-    id: 'seed-3',
-    title: 'Neighborhood Café – Check-in',
-    locationLine: 'Lavapiés · Afternoons · Sometimes',
-    status: 'Emerging orbit',
-    description:
-      'A newer stop in your pattern. See if it becomes a regular part of your orbit over time.',
-  },
-];
-
-const SeedOrbitCard = ({
-  orbit,
-  colors,
-}: {
-  orbit: SeedOrbit;
-  colors: OrbitColors;
-}) => {
-  return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-        },
-      ]}
-    >
-      <Text style={[styles.cardTitle, { color: colors.text }]}>
-        {orbit.title}
-      </Text>
-      <Text style={[styles.cardMeta, { color: colors.textMuted }]}>
-        {orbit.locationLine}
-      </Text>
-      <Text style={[styles.seedStatus, { color: colors.accent }]}>
-        {orbit.status}
-      </Text>
-      <Text style={[styles.cardNote, { color: colors.text }]}>
-        {orbit.description}
-      </Text>
-    </View>
-  );
-};
+type HomeMood = (typeof HOME_MOODS)[number];
 
 export default function HomeScreen() {
-  const { checkins } = useOrbit();
-  const theme = getCurrentOrbitTheme();
-  const { colors, name: themeName } = theme;
+  const { selectedMood, setSelectedMood, getRecentCheckins, checkins } =
+    useOrbit();
+
+  const { greetingTitle, greetingSubtitle } = useMemo(
+    () => buildGreeting(selectedMood as HomeMood | null),
+    [selectedMood]
+  );
+
+  const recentCheckins = useMemo(() => {
+    if (typeof getRecentCheckins === 'function') {
+      return getRecentCheckins(5);
+    }
+    return [...checkins].slice(-5).reverse();
+  }, [getRecentCheckins, checkins]);
+
+  const suggestedVenues = useMemo(() => {
+    return VENUES.slice(0, 3);
+  }, []);
+
+  // Accent color for CTAs — follows the selected mood if possible,
+  // otherwise falls back to a calm default.
+  const accentColor = useMemo(() => {
+    const key =
+      (selectedMood && MOOD_COLORS[selectedMood]) ? MOOD_COLORS[selectedMood] : 'moss';
+    return PALETTE[key] ?? '#5FB49C';
+  }, [selectedMood]);
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.background },
-      ]}
-    >
-      <Text style={[styles.appTitle, { color: colors.text }]}>Orbit</Text>
-      <Text style={[styles.appTagline, { color: colors.textMuted }]}>
-        The places you return to, and what they mean.
-      </Text>
+    <ThemedView style={{ flex: 1 }}>
+      {/* Shared header – subtitle removed to let ORBIT stand alone */}
+      <OrbitHeader padded />
 
-      {/* Tiny mode hint – optional, remove if you don’t want it */}
-      <Text style={[styles.modeHint, { color: colors.textMuted }]}>
-        {themeName}
-      </Text>
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 16,
+          paddingBottom: 32,
+          gap: 24,
+        }}
+      >
+        {/* Greeting */}
+        <View>
+          <ThemedText type="title" style={{ marginBottom: 4 }}>
+            {greetingTitle}
+          </ThemedText>
+          <ThemedText type="default">{greetingSubtitle}</ThemedText>
+        </View>
 
-      {/* Live, real check-ins */}
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        Your Orbit
-      </Text>
-      <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
-        Cleopatra’s recent check-ins, across the city.
-      </Text>
+        {/* Mood section */}
+        <View>
+          <ThemedText
+            type="title"
+            style={{ fontSize: 20, textAlign: 'center', marginBottom: 12 }}
+          >
+            What is your mood?
+          </ThemedText>
 
-      {checkins.length === 0 ? (
-        <EmptyOrbit colors={colors} />
-      ) : (
-        <FlatList
-          data={checkins}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <CheckinCard checkin={item} colors={colors} />
+          <ThemedText
+            type="default"
+            style={{
+              marginBottom: 12,
+              opacity: 0.9,
+              textAlign: 'center',
+            }}
+          >
+            A quick note to yourself about how today feels. No pressure to be
+            precise.
+          </ThemedText>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 8,
+              justifyContent: 'center',
+            }}
+          >
+            {HOME_MOODS.map((mood) => (
+              <MoodPill
+                key={mood}
+                label={mood}
+                selected={selectedMood === mood}
+                onPress={() => {
+                  if (selectedMood === mood) {
+                    setSelectedMood(null);
+                  } else {
+                    setSelectedMood(mood);
+                  }
+                }}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Suggestions */}
+        <View>
+          <ThemedText
+            type="title"
+            style={{ fontSize: 20, marginBottom: 4, textAlign: 'left' }}
+          >
+            Suggestions
+          </ThemedText>
+          <ThemedText
+            type="default"
+            style={{ marginBottom: 12, opacity: 0.9 }}
+          >
+            A few places that might fit the shape of today. These will grow
+            smarter over time.
+          </ThemedText>
+
+          <View style={{ gap: 12 }}>
+            {suggestedVenues.map((venue) => (
+              <Link
+                key={venue.id}
+                href={{
+                  pathname: '/(tabs)/venues/[id]',
+                  params: { id: venue.id },
+                }}
+                asChild
+              >
+                <Pressable
+                  style={{
+                    paddingVertical: 10,
+                  }}
+                >
+                  <ThemedText type="defaultSemiBold">
+                    {venue.name}
+                  </ThemedText>
+                  <ThemedText
+                    type="default"
+                    style={{ opacity: 0.8, marginTop: 2 }}
+                  >
+                    {venue.neighborhood}
+                  </ThemedText>
+                  <ThemedText
+                    type="default"
+                    style={{ opacity: 0.8, marginTop: 4 }}
+                  >
+                    {venue.description}
+                  </ThemedText>
+                </Pressable>
+              </Link>
+            ))}
+          </View>
+
+          {/* Turn "Browse all venues" into a real Orbit-style button */}
+          <Link href="/(tabs)/venues" asChild>
+            <Pressable
+              style={({ pressed }) => ({
+                marginTop: 20,
+                alignSelf: 'center',
+                paddingHorizontal: 18,
+                paddingVertical: 10,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: accentColor,
+                backgroundColor: pressed ? `${accentColor}33` : 'transparent',
+                opacity: pressed ? 0.95 : 1,
+              })}
+            >
+              <ThemedText type="defaultSemiBold">
+                Browse all venues →
+              </ThemedText>
+            </Pressable>
+          </Link>
+        </View>
+
+        {/* Recent visits */}
+        <View>
+          <ThemedText
+            type="title"
+            style={{ fontSize: 20, marginBottom: 4, textAlign: 'left' }}
+          >
+            Recent visits
+          </ThemedText>
+          <ThemedText
+            type="default"
+            style={{ marginBottom: 12, opacity: 0.9 }}
+          >
+            The last few places you’ve checked in.
+          </ThemedText>
+
+          {recentCheckins.length === 0 ? (
+            <ThemedText type="default" style={{ opacity: 0.7 }}>
+              Once you start marking visits, they’ll appear here.
+            </ThemedText>
+          ) : (
+            <View style={{ gap: 10 }}>
+              {recentCheckins.map((checkin: any) => {
+                const venue = VENUES.find((v) => v.id === checkin.venueId);
+                if (!venue) return null;
+
+                return (
+                  <Link
+                    key={checkin.id}
+                    href={{
+                      pathname: '/(tabs)/venues/[id]',
+                      params: { id: venue.id },
+                    }}
+                    asChild
+                  >
+                    <Pressable
+                      style={{
+                        paddingVertical: 8,
+                        borderBottomWidth: 0.5,
+                        borderBottomColor: 'rgba(255,255,255,0.1)',
+                      }}
+                    >
+                      <ThemedText type="defaultSemiBold">
+                        {venue.name}
+                      </ThemedText>
+                      <ThemedText
+                        type="default"
+                        style={{ opacity: 0.8, marginTop: 2 }}
+                      >
+                        {venue.neighborhood}
+                      </ThemedText>
+
+                      {checkin.mood ? (
+                        <ThemedText
+                          type="default"
+                          style={{ marginTop: 4, opacity: 0.9 }}
+                        >
+                          Mood: {checkin.mood}
+                        </ThemedText>
+                      ) : null}
+
+                      {checkin.note ? (
+                        <ThemedText
+                          type="default"
+                          numberOfLines={2}
+                          style={{ marginTop: 4, opacity: 0.9 }}
+                        >
+                          {checkin.note}
+                        </ThemedText>
+                      ) : null}
+                    </Pressable>
+                  </Link>
+                );
+              })}
+            </View>
           )}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      {/* Seed / suggested orbits */}
-      <View style={styles.seedSection}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Suggested Orbits
-        </Text>
-        <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
-          Places nearby that might become part of your pattern.
-        </Text>
-
-        {SEED_ORBITS.map((orbit) => (
-          <SeedOrbitCard key={orbit.id} orbit={orbit} colors={colors} />
-        ))}
-      </View>
-    </View>
+        </View>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 40,
-    paddingHorizontal: 16,
-    backgroundColor: '#050509', // overridden by theme
-  },
-  appTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#ffffff', // overridden by theme
-  },
-  appTagline: {
-    fontSize: 14,
-    color: '#AAAAAA', // overridden by theme
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  modeHint: {
-    fontSize: 12,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF', // overridden by theme
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    color: '#9A9AA5', // overridden by theme
-    marginBottom: 12,
-  },
-  listContent: {
-    paddingBottom: 16,
-  },
-  card: {
-    backgroundColor: '#111118', // overridden by theme
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#252535', // overridden by theme
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF', // overridden by theme
-    marginBottom: 2,
-  },
-  cardMeta: {
-    fontSize: 12,
-    color: '#888888', // overridden by theme
-    marginBottom: 4,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 8,
-  },
-  tagPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#222233', // overridden by theme
-  },
-  tagText: {
-    fontSize: 11,
-    color: '#CFCFFF', // overridden by theme
-  },
-  cardNote: {
-    fontSize: 13,
-    color: '#E0E0E0', // overridden by theme
-  },
-  cardNoteMuted: {
-    fontSize: 13,
-    color: '#777788', // overridden by theme
-    fontStyle: 'italic',
-  },
-  emptyState: {
-    marginTop: 24,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#252535', // overridden
-    backgroundColor: '#0C0C14', // overridden
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF', // overridden
-    marginBottom: 6,
-  },
-  emptyBody: {
-    fontSize: 13,
-    color: '#B0B0C0', // overridden
-  },
-  seedSection: {
-    marginTop: 24,
-    marginBottom: 24,
-  },
-  seedStatus: {
-    fontSize: 12,
-    color: '#B8FFCB', // overridden
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-});
+type MoodPillProps = {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+};
+
+function MoodPill({ label, selected, onPress }: MoodPillProps) {
+  const key = MOOD_COLORS[label] ?? 'moss';
+  const baseColor = PALETTE[key];
+
+  const borderColor = selected ? baseColor : 'rgba(255,255,255,0.3)';
+  const backgroundColor = selected ? `${baseColor}33` : 'transparent';
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor,
+        backgroundColor: pressed ? `${baseColor}55` : backgroundColor,
+      })}
+    >
+      <ThemedText
+        type="default"
+        style={{
+          textTransform: 'lowercase',
+        }}
+      >
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+function buildGreeting(mood: HomeMood | null) {
+  const now = new Date();
+  const hour = now.getHours();
+
+  let timeOfDay: 'night' | 'morning' | 'afternoon' | 'evening';
+  if (hour < 5) timeOfDay = 'night';
+  else if (hour < 12) timeOfDay = 'morning';
+  else if (hour < 18) timeOfDay = 'afternoon';
+  else timeOfDay = 'evening';
+
+  if (!mood) {
+    const baseTitle =
+      timeOfDay === 'morning'
+        ? 'Morning orbit.'
+        : timeOfDay === 'afternoon'
+        ? 'Afternoon orbit.'
+        : timeOfDay === 'evening'
+        ? 'Evening orbit.'
+        : 'Late orbit.';
+
+    const baseSubtitle =
+      timeOfDay === 'morning'
+        ? 'See where today might carry you.'
+        : timeOfDay === 'afternoon'
+        ? 'Pick up the thread of the day and see what calls you back.'
+        : timeOfDay === 'evening'
+        ? 'Look over the rooms and corners that might close your day gently.'
+        : 'A quiet check-in before tomorrow begins again.';
+
+    return {
+      greetingTitle: baseTitle,
+      greetingSubtitle: baseSubtitle,
+    };
+  }
+
+  switch (mood) {
+    case 'soft':
+      return {
+        greetingTitle: 'Soft orbit.',
+        greetingSubtitle:
+          'Let the day stay gentle. Choose places that feel like a deep breath.',
+      };
+    case 'curious':
+      return {
+        greetingTitle: 'Curious orbit.',
+        greetingSubtitle:
+          'Follow the corners you haven’t turned yet and see what appears.',
+      };
+    case 'electric':
+      return {
+        greetingTitle: 'Electric orbit.',
+        greetingSubtitle:
+          'Lean into the rooms with a little more hum, color, and noise.',
+      };
+    case 'quiet':
+      return {
+        greetingTitle: 'Quiet orbit.',
+        greetingSubtitle:
+          'Find the cafés, benches, and small streets that keep the volume low.',
+      };
+    case 'cozy':
+      return {
+        greetingTitle: 'Cozy orbit.',
+        greetingSubtitle:
+          'Return to the places that feel like a familiar chair and a warm light.',
+      };
+    case 'reflective':
+      return {
+        greetingTitle: 'Reflective orbit.',
+        greetingSubtitle:
+          'Revisit the corners that still echo with something you’re not done thinking about.',
+      };
+    case 'wild':
+      return {
+        greetingTitle: 'Wild orbit.',
+        greetingSubtitle:
+          'Pick somewhere that might surprise you a little — and see what it stirs up.',
+      };
+    default:
+      return {
+        greetingTitle: 'Today’s orbit.',
+        greetingSubtitle:
+          'Notice the places that meet you, and mark the ones that matter.',
+      };
+  }
+}

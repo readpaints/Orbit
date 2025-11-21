@@ -5,23 +5,22 @@ const tintColorDark = '#ffb46a';
 
 const Colors = {
   light: {
-    // Core expo keys
+    // Core keys
     text: '#3e3024',
     background: '#fff7ea',
     tint: tintColorLight,
     tabIconDefault: '#b5987b',
     tabIconSelected: tintColorLight,
 
-    // Extra Orbit-y helpers
+    // Extra Orbit helpers
     card: '#ffe7cf',
-    cardSoft: '#fff3df',
-    muted: '#c2a78a',
+    cardSoft: '#fff3dd',
+    muted: '#a58a6c',
     accent: '#ff8a3d',
-    border: '#f5d7b8',
+    border: '#e0c4a4',
   },
-
   dark: {
-    text: '#f6eee4',
+    text: '#f5e6d3',
     background: '#201913',
     tint: tintColorDark,
     tabIconDefault: '#9b7f63',

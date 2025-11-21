@@ -1,51 +1,56 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router';
-import React from 'react';
-import { getCurrentOrbitTheme } from '../../constants/theme';
-import { OrbitProvider } from '../../context/OrbitContext';
 
 export default function TabsLayout() {
-  const theme = getCurrentOrbitTheme();
-  const { colors } = theme;
-
   return (
-    <OrbitProvider>
-      <Tabs
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: colors.surface,
-          },
-          headerTitleStyle: {
-            color: colors.text,
-          },
-          headerShadowVisible: false,
-          tabBarStyle: {
-            backgroundColor: colors.tabBarBackground,
-            borderTopColor: colors.tabBarBorder,
-          },
-          tabBarActiveTintColor: colors.accent,
-          tabBarInactiveTintColor: colors.textMuted,
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: '#ffffff',
+        tabBarInactiveTintColor: '#999999',
+        tabBarStyle: {
+          backgroundColor: '#000000',
+          borderTopWidth: 0,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
         }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Home',
-          }}
-        />
-        <Tabs.Screen
-          name="explore"
-          options={{
-            title: 'Explore',
-          }}
-        />
-        <Tabs.Screen
-          name="venues"
-          options={{
-            title: 'Venues',
-          }}
-        />
-      </Tabs>
-    </OrbitProvider>
+      />
+
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+        }}
+      />
+
+      <Tabs.Screen
+        name="journal"
+        options={{
+          title: 'Journal',
+        }}
+      />
+
+      <Tabs.Screen
+        name="venues"
+        options={{
+          title: 'Venues',
+        }}
+      />
+
+      <Tabs.Screen
+        name="additional"
+        options={{
+          title: 'Additional',
+        }}
+      />
+    </Tabs>
   );
 }
