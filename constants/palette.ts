@@ -1,6 +1,5 @@
 // constants/palette.ts
-// Central color well for Orbit.
-// All other styling should draw from here over time.
+// Central color well for Orbit. Other styling should pull from here over time.
 
 export const PALETTE = {
   // Deep sea / ink
@@ -17,12 +16,14 @@ export const PALETTE = {
 
   // Sand / page / skin
   sand: '#E4C5AF',
+
+  // Dusk sky backgrounds
+  dusk: '#4C5A69',
+  deepDusk: '#394751',
 } as const;
 
 export type PaletteKey = keyof typeof PALETTE;
 
-// First sketch of mood → color mapping.
-// We can refine this later as we see it in the UI.
 export const MOOD_COLORS: Record<string, PaletteKey> = {
   soft: 'moss',
   curious: 'tealCurrent',

@@ -17,7 +17,7 @@ type Checkin = {
 };
 
 // SECTION KEYS
-type SectionKey = 'yourOrbit' | 'build' | 'connections' | 'what' | 'how';
+type SectionKey = 'yourOrbit' | 'build' | 'connections' | 'crossings';
 
 // Time-of-day accent palette for Explore (local only; does not touch global theme)
 type ExploreAccent = {
@@ -28,24 +28,25 @@ type ExploreAccent = {
   backdrop: string;
 };
 
+// Kept for local accents if needed later
+const EXPLORE_BACKDROP = '#303943';
+const REPLAY_BUTTON_BG = '#E4C5AF';
+const REPLAY_BUTTON_TEXT = '#FFFFFF';
+
 const EXPLORE_ACCENT_DAY: ExploreAccent = {
-  // warm, linen-gold accent for daytime
   border: 'rgba(228, 197, 175, 0.8)',
   pillBackground: 'rgba(228, 197, 175, 0.18)',
   filledBackground: '#E4C5AF',
   filledText: '#15110F',
-  // a very dark, slightly warm backdrop so the page isn’t pure black
-  backdrop: '#0C1011',
+  backdrop: EXPLORE_BACKDROP,
 };
 
 const EXPLORE_ACCENT_NIGHT: ExploreAccent = {
-  // cooler, teal-indigo accent for evenings / late hours
-  border: 'rgba(116, 165, 127, 0.9)',
-  pillBackground: 'rgba(116, 165, 127, 0.20)',
+  border: 'rgba(116, 181, 165, 0.9)',
+  pillBackground: 'rgba(116, 181, 165, 0.22)',
   filledBackground: '#074F57',
   filledText: '#F5EBDD',
-  // deep sea-green charcoal — keeps things dark but not flat black
-  backdrop: '#041012',
+  backdrop: EXPLORE_BACKDROP,
 };
 
 function getExploreAccentForNow(): ExploreAccent {
@@ -55,7 +56,7 @@ function getExploreAccentForNow(): ExploreAccent {
 }
 
 export default function ExploreRootScreen() {
-  const { checkins, onboardingComplete } = useOrbit() as any;
+  const { checkins, connectionsVisibility } = useOrbit();
 
   const allCheckins: Checkin[] = (checkins ?? []) as Checkin[];
 
@@ -91,13 +92,23 @@ export default function ExploreRootScreen() {
     setOpenSection((current) => (current === key ? null : key));
   };
 
+  // Visibility copy for the Connections section
+  const visibilityLabel =
+    connectionsVisibility === 'private'
+      ? 'Private orbit'
+      : connectionsVisibility === 'overlaps'
+      ? 'Visible to overlaps'
+      : 'Open to connections';
+
+  const visibilityCopy =
+    connectionsVisibility === 'private'
+      ? 'Right now, only you can see your crossings. You can keep your orbit private, or choose to become visible to people whose paths genuinely overlap with yours.'
+      : connectionsVisibility === 'overlaps'
+      ? 'Your orbit is visible only to people who share real overlaps with you — places, times of day, and moods. No feeds, no follower counts, just quiet introductions.'
+      : 'Your orbit is open to gentle introductions from people whose places, moods, and timing strongly echo your own. You can always step back to overlaps-only or fully private.';
+
   return (
-    <ThemedView
-      style={{
-        flex: 1,
-        backgroundColor: accent.backdrop,
-      }}
-    >
+    <ThemedView style={{ flex: 1 }}>
       {/* Shared Orbit header */}
       <OrbitHeader subtitle="your orbit, from a little distance" padded />
 
@@ -110,9 +121,7 @@ export default function ExploreRootScreen() {
       />
 
       <ScrollView
-        style={{
-          flex: 1,
-        }}
+        style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 12,
@@ -244,9 +253,7 @@ export default function ExploreRootScreen() {
                   borderWidth: 1,
                   borderColor: accent.filledBackground,
                   alignSelf: 'flex-start',
-                  backgroundColor: pressed
-                    ? accent.filledBackground
-                    : accent.filledBackground,
+                  backgroundColor: accent.filledBackground,
                   opacity: pressed ? 0.95 : 1,
                 })}
               >
@@ -254,7 +261,7 @@ export default function ExploreRootScreen() {
                   style={{
                     fontSize: 14,
                     fontWeight: '500',
-                    color: accent.filledText,
+                    color: '#FFFFFF',
                   }}
                 >
                   Review your venue notes →
@@ -264,7 +271,27 @@ export default function ExploreRootScreen() {
           </View>
 
           {/* Orbit map link */}
-          <View style={{ marginBottom: 28 }}>
+          <View style={{ marginBottom: 8 }}>
+            <ThemedText
+              style={{
+                fontSize: 14,
+                fontWeight: '600',
+                marginBottom: 6,
+              }}
+            >
+              Your orbit on the map
+            </ThemedText>
+            <ThemedText
+              style={{
+                fontSize: 13,
+                opacity: 0.7,
+                marginBottom: 12,
+              }}
+            >
+              Step onto a map view of this same orbit — the places you’ve marked
+              in this city, gathered into a single field.
+            </ThemedText>
+
             <Link href="/(tabs)/explore/map" asChild>
               <Pressable
                 style={({ pressed }) => ({
@@ -274,9 +301,7 @@ export default function ExploreRootScreen() {
                   borderWidth: 1,
                   borderColor: accent.filledBackground,
                   alignSelf: 'flex-start',
-                  backgroundColor: pressed
-                    ? accent.pillBackground
-                    : accent.pillBackground,
+                  backgroundColor: accent.filledBackground,
                   opacity: pressed ? 0.95 : 1,
                 })}
               >
@@ -284,7 +309,7 @@ export default function ExploreRootScreen() {
                   style={{
                     fontSize: 14,
                     fontWeight: '500',
-                    color: accent.filledText,
+                    color: '#FFFFFF',
                   }}
                 >
                   View your orbit on the map →
@@ -297,7 +322,7 @@ export default function ExploreRootScreen() {
         {/* SECTION: Build Your Orbit */}
         <SectionContainer
           title="Build your orbit"
-          subtitle="A small profile helps your notes and places feel more like you."
+          subtitle="A small profile helps your connections feel more like you."
           isOpen={openSection === 'build'}
           onToggle={() => toggleSection('build')}
           accent={accent}
@@ -320,8 +345,8 @@ export default function ExploreRootScreen() {
                 marginBottom: 10,
               }}
             >
-              Name, nickname, a few interests, the kinds of places you feel at
-              home in.
+              First name, a small bio, the kinds of places you feel at home in.
+              This is what others may see when your orbits overlap.
             </ThemedText>
 
             <Link href="/(tabs)/explore/profile" asChild>
@@ -333,7 +358,9 @@ export default function ExploreRootScreen() {
                   borderWidth: 1,
                   borderColor: accent.border,
                   alignSelf: 'flex-start',
-                  backgroundColor: pressed ? accent.pillBackground : 'transparent',
+                  backgroundColor: pressed
+                    ? accent.pillBackground
+                    : 'transparent',
                   opacity: pressed ? 0.9 : 1,
                 })}
               >
@@ -380,7 +407,9 @@ export default function ExploreRootScreen() {
                   borderWidth: 1,
                   borderColor: accent.border,
                   alignSelf: 'flex-start',
-                  backgroundColor: pressed ? accent.pillBackground : 'transparent',
+                  backgroundColor: pressed
+                    ? accent.pillBackground
+                    : 'transparent',
                   opacity: pressed ? 0.9 : 1,
                 })}
               >
@@ -400,34 +429,12 @@ export default function ExploreRootScreen() {
         {/* SECTION: Connections */}
         <SectionContainer
           title="Connections"
-          subtitle="Social echoes that may arrive later."
+          subtitle="Where shared corners quietly turn into people."
           isOpen={openSection === 'connections'}
           onToggle={() => toggleSection('connections')}
           accent={accent}
         >
-          <ThemedText
-            style={{
-              fontSize: 13,
-              lineHeight: 20,
-              opacity: 0.8,
-            }}
-          >
-            One day, your orbit might lightly touch other people’s orbits —
-            shared venues, overlapping moods, familiar corners in unfamiliar
-            cities. For now, this is just a private constellation. No
-            followers, no feeds, no pressure.
-          </ThemedText>
-        </SectionContainer>
-
-        {/* SECTION: What Orbit Is */}
-        <SectionContainer
-          title="What Orbit Is"
-          subtitle="A small place for big moments."
-          isOpen={openSection === 'what'}
-          onToggle={() => toggleSection('what')}
-          accent={accent}
-        >
-          <View style={{ marginBottom: 12 }}>
+          <View style={{ marginBottom: 10 }}>
             <ThemedText
               style={{
                 fontSize: 13,
@@ -435,44 +442,93 @@ export default function ExploreRootScreen() {
                 opacity: 0.8,
               }}
             >
-              Orbit is a small place for the cafés, galleries, bars, parks, and
-              corners that make your life feel alive — a quiet map of what
-              mattered to you.
+              Orbit notices when your orbit lightly touches other people’s —
+              shared venues, overlapping moods, familiar corners in unfamiliar
+              cities.
             </ThemedText>
           </View>
 
-          {/* Link to philosophy page */}
-          <Link href="/(tabs)/explore/philosophy" asChild>
+          <View style={{ marginBottom: 10 }}>
+            <ThemedText
+              style={{
+                fontSize: 13,
+                lineHeight: 20,
+                opacity: 0.8,
+              }}
+            >
+              Instead of feeds or follower counts, Connections surfaces a small
+              handful of people whose lives seem to move with a similar gravity
+              to yours.
+            </ThemedText>
+          </View>
+
+          {/* Visibility status */}
+          <View
+            style={{
+              marginTop: 8,
+              marginBottom: 14,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: accent.border,
+              alignSelf: 'flex-start',
+            }}
+          >
+            <ThemedText
+              style={{
+                fontSize: 12,
+                fontWeight: '600',
+                marginBottom: 2,
+              }}
+            >
+              {visibilityLabel}
+            </ThemedText>
+            <ThemedText
+              style={{
+                fontSize: 12,
+                lineHeight: 18,
+                opacity: 0.75,
+              }}
+            >
+              {visibilityCopy}
+            </ThemedText>
+          </View>
+
+          {/* Button to full Connections page */}
+          <Link href="/(tabs)/explore/connections" asChild>
             <Pressable
               style={({ pressed }) => ({
+                marginTop: 4,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
                 borderRadius: 999,
                 borderWidth: 1,
-                borderColor: accent.border,
+                borderColor: accent.filledBackground,
                 alignSelf: 'flex-start',
-                backgroundColor: pressed ? accent.pillBackground : 'transparent',
-                opacity: pressed ? 0.9 : 1,
+                backgroundColor: accent.filledBackground,
+                opacity: pressed ? 0.95 : 1,
               })}
             >
               <ThemedText
                 style={{
                   fontSize: 14,
                   fontWeight: '500',
+                  color: '#FFFFFF',
                 }}
               >
-                Read the full story →
+                Open Connections →
               </ThemedText>
             </Pressable>
           </Link>
         </SectionContainer>
 
-        {/* SECTION: How Orbit Works */}
+        {/* SECTION: Quiet crossings */}
         <SectionContainer
-          title="How Orbit works"
-          subtitle="A quick explanation, with deeper pages if you want them."
-          isOpen={openSection === 'how'}
-          onToggle={() => toggleSection('how')}
+          title="Quiet crossings"
+          subtitle="How places become shared corners, not just dots on a map."
+          isOpen={openSection === 'crossings'}
+          onToggle={() => toggleSection('crossings')}
           accent={accent}
         >
           <View style={{ marginBottom: 12 }}>
@@ -483,9 +539,24 @@ export default function ExploreRootScreen() {
                 opacity: 0.8,
               }}
             >
-              Orbit is a gentle log of the places that shape you. You check in,
-              choose a mood, leave a few notes, and let the pattern slowly
-              appear over time.
+              Quiet crossings are the moments when a place stops being just your
+              corner and starts to feel shared — when another life keeps showing
+              up in the same rooms and hours you do.
+            </ThemedText>
+          </View>
+
+          <View style={{ marginBottom: 12 }}>
+            <ThemedText
+              style={{
+                fontSize: 13,
+                lineHeight: 20,
+                opacity: 0.8,
+              }}
+            >
+              Over time, Orbit will surface these crossings as small, human
+              hints — a familiar presence in a favorite café, a recurring
+              evening crowd in the same bar, a museum regular who wanders the
+              same galleries.
             </ThemedText>
           </View>
 
@@ -497,12 +568,12 @@ export default function ExploreRootScreen() {
                 opacity: 0.8,
               }}
             >
-              No streaks, no scores. Just a record of how rooms, streets, cafés,
-              and corners have met you.
+              Connections shows the people. Quiet crossings show you how the
+              places themselves are carrying those possible introductions.
             </ThemedText>
           </View>
 
-          <Link href="/(tabs)/explore/how-orbit-works" asChild>
+          <Link href="/(tabs)/venues/map" asChild>
             <Pressable
               style={({ pressed }) => ({
                 paddingHorizontal: 16,
@@ -511,7 +582,9 @@ export default function ExploreRootScreen() {
                 borderWidth: 1,
                 borderColor: accent.border,
                 alignSelf: 'flex-start',
-                backgroundColor: pressed ? accent.pillBackground : 'transparent',
+                backgroundColor: pressed
+                  ? accent.pillBackground
+                  : 'transparent',
                 opacity: pressed ? 0.9 : 1,
               })}
             >
@@ -521,82 +594,11 @@ export default function ExploreRootScreen() {
                   fontWeight: '500',
                 }}
               >
-                See the step-by-step →
+                See your crossings on the map →
               </ThemedText>
             </Pressable>
           </Link>
         </SectionContainer>
-
-        {/* Replay onboarding (we'll probably move this to More later) */}
-        <View
-          style={{
-            marginTop: 32,
-            paddingTop: 18,
-            borderTopWidth: 1,
-            borderTopColor: accent.border,
-            gap: 8,
-          }}
-        >
-          <ThemedText
-            style={{
-              fontSize: 14,
-              fontWeight: '600',
-              marginBottom: 2,
-            }}
-          >
-            Replay the introduction
-          </ThemedText>
-          <ThemedText
-            style={{
-              fontSize: 13,
-              opacity: 0.7,
-              marginBottom: 10,
-            }}
-          >
-            Step back through the opening sequence and remember why you started
-            using Orbit.
-          </ThemedText>
-
-          <Link href="/onboarding" asChild>
-            <Pressable
-              style={({ pressed }) => ({
-                paddingHorizontal: 18,
-                paddingVertical: 11,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: accent.filledBackground,
-                backgroundColor: pressed
-                  ? accent.pillBackground
-                  : accent.filledBackground,
-                alignSelf: 'flex-start',
-                opacity: pressed ? 0.95 : 1,
-              })}
-            >
-              <ThemedText
-                style={{
-                  fontSize: 14,
-                  fontWeight: '500',
-                  color: accent.filledText,
-                }}
-              >
-                Replay the introduction
-              </ThemedText>
-            </Pressable>
-          </Link>
-
-          {onboardingComplete === false && (
-            <ThemedText
-              style={{
-                fontSize: 11,
-                opacity: 0.6,
-                marginTop: 4,
-              }}
-            >
-              (You’re currently mid-onboarding; finishing it will return you
-              here.)
-            </ThemedText>
-          )}
-        </View>
       </ScrollView>
     </ThemedView>
   );

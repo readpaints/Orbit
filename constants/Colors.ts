@@ -3,11 +3,15 @@
 const tintColorLight = '#ff8a3d';
 const tintColorDark = '#ffb46a';
 
+// Shared dusk background for now.
+// To audition a deeper variant, change this to '#394751'.
+const DUSK_BACKGROUND = '#4C5A69';
+
 const Colors = {
   light: {
     // Core keys
     text: '#3e3024',
-    background: '#fff7ea',
+    background: DUSK_BACKGROUND,
     tint: tintColorLight,
     tabIconDefault: '#b5987b',
     tabIconSelected: tintColorLight,
@@ -20,12 +24,14 @@ const Colors = {
     border: '#e0c4a4',
   },
   dark: {
+    // Core keys
     text: '#f5e6d3',
-    background: '#201913',
+    background: DUSK_BACKGROUND,
     tint: tintColorDark,
     tabIconDefault: '#9b7f63',
     tabIconSelected: tintColorDark,
 
+    // Extra Orbit helpers
     card: '#3a2b1d',
     cardSoft: '#261b12',
     muted: '#b79a7c',
@@ -33,5 +39,8 @@ const Colors = {
     border: '#4b3623',
   },
 } as const;
+
+export type ThemeName = keyof typeof Colors;
+export type ThemeColorName = keyof (typeof Colors)['light'];
 
 export default Colors;

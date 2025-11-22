@@ -13,7 +13,13 @@ const STORAGE_KEYS = {
   SELECTED_MOOD: 'orbit:selectedMood',
   ONBOARDING_COMPLETE: 'orbit:onboardingComplete',
   CURIOUS_VENUES: 'orbit:curiousVenues',
+  CONNECTIONS_VISIBILITY: 'orbit:connectionsVisibility',
+  ORBIT_PROFILE: 'orbit:orbitProfile',
 } as const;
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 // You can refine these later if you like.
 // For now we keep them flexible and simple.
@@ -26,6 +32,25 @@ export interface Checkin {
   type: 'quick' | 'meaningful';
   mood?: string | null;
   note?: string | null;
+}
+
+export type ConnectionsVisibility = 'private' | 'overlaps' | 'open';
+
+export type TimeOfDayPreference =
+  | 'dawn'
+  | 'morning'
+  | 'afternoon'
+  | 'evening'
+  | 'late'
+  | null;
+
+export interface OrbitProfile {
+  firstName: string;
+  lastInitial?: string;
+  bio: string;
+  favoriteVenueIds: string[];
+  timeOfDayPreference: TimeOfDayPreference;
+  moodPalette: string[]; // mood keys like 'soft', 'curious', etc.
 }
 
 export interface OrbitContextValue {
@@ -53,6 +78,13 @@ export interface OrbitContextValue {
 
   // Onboarding
   setOnboardingComplete: (complete: boolean) => void;
+
+  // Connections
+  connectionsVisibility: ConnectionsVisibility;
+  setConnectionsVisibility: (mode: ConnectionsVisibility) => void;
+
+  orbitProfile: OrbitProfile;
+  updateOrbitProfile: (update: Partial<OrbitProfile>) => void;
 }
 
 const OrbitContext = createContext<OrbitContextValue | undefined>(undefined);
@@ -61,6 +93,15 @@ interface ProviderProps {
   children: ReactNode;
 }
 
+const defaultOrbitProfile: OrbitProfile = {
+  firstName: '',
+  lastInitial: '',
+  bio: '',
+  favoriteVenueIds: [],
+  timeOfDayPreference: null,
+  moodPalette: [],
+};
+
 export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [selectedMood, setSelectedMoodState] = useState<MoodValue>(null);
@@ -68,6 +109,12 @@ export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
     useState<boolean>(false);
   const [curiousVenueIds, setCuriousVenueIds] = useState<string[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
+
+  // Connections state
+  const [connectionsVisibility, setConnectionsVisibilityState] =
+    useState<ConnectionsVisibility>('private');
+  const [orbitProfile, setOrbitProfile] =
+    useState<OrbitProfile>(defaultOrbitProfile);
 
   // --- Hydration from AsyncStorage -----------------------------------------
   useEffect(() => {
@@ -78,15 +125,26 @@ export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
           storedMood,
           storedOnboarding,
           storedCuriousVenues,
+          storedConnectionsVisibility,
+          storedOrbitProfile,
         ] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.CHECKINS),
           AsyncStorage.getItem(STORAGE_KEYS.SELECTED_MOOD),
           AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETE),
           AsyncStorage.getItem(STORAGE_KEYS.CURIOUS_VENUES),
+          AsyncStorage.getItem(STORAGE_KEYS.CONNECTIONS_VISIBILITY),
+          AsyncStorage.getItem(STORAGE_KEYS.ORBIT_PROFILE),
         ]);
 
         if (storedCheckins) {
-          setCheckins(JSON.parse(storedCheckins));
+          try {
+            const parsed = JSON.parse(storedCheckins);
+            if (Array.isArray(parsed)) {
+              setCheckins(parsed);
+            }
+          } catch {
+            // ignore malformed data
+          }
         }
 
         if (storedMood) {
@@ -107,6 +165,32 @@ export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
             // ignore malformed data
           }
         }
+
+        if (storedConnectionsVisibility) {
+          if (
+            storedConnectionsVisibility === 'private' ||
+            storedConnectionsVisibility === 'overlaps' ||
+            storedConnectionsVisibility === 'open'
+          ) {
+            setConnectionsVisibilityState(
+              storedConnectionsVisibility as ConnectionsVisibility
+            );
+          }
+        }
+
+        if (storedOrbitProfile) {
+          try {
+            const parsed = JSON.parse(storedOrbitProfile);
+            if (parsed && typeof parsed === 'object') {
+              setOrbitProfile((prev) => ({
+                ...prev,
+                ...parsed,
+              }));
+            }
+          } catch {
+            // ignore malformed profile
+          }
+        }
       } catch (err) {
         console.warn('OrbitContext: error hydrating state', err);
       } finally {
@@ -121,10 +205,7 @@ export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
   const persistCheckins = async (next: Checkin[]) => {
     setCheckins(next);
     try {
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.CHECKINS,
-        JSON.stringify(next)
-      );
+      await AsyncStorage.setItem(STORAGE_KEYS.CHECKINS, JSON.stringify(next));
     } catch (err) {
       console.warn('OrbitContext: error saving checkins', err);
     }
@@ -167,7 +248,29 @@ export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
     }
   };
 
-  // --- Public API -----------------------------------------------------------
+  const persistConnectionsVisibility = async (mode: ConnectionsVisibility) => {
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.CONNECTIONS_VISIBILITY,
+        mode
+      );
+    } catch (err) {
+      console.warn('OrbitContext: error saving connections visibility', err);
+    }
+  };
+
+  const persistOrbitProfile = async (profile: OrbitProfile) => {
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.ORBIT_PROFILE,
+        JSON.stringify(profile)
+      );
+    } catch (err) {
+      console.warn('OrbitContext: error saving orbit profile', err);
+    }
+  };
+
+  // --- Public API: moods, check-ins, onboarding -----------------------------
 
   const setSelectedMood = (mood: MoodValue) => {
     void persistSelectedMood(mood);
@@ -225,6 +328,24 @@ export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
     return curiousVenueIds.includes(venueId);
   };
 
+  // --- Public API: connections ----------------------------------------------
+
+  const setConnectionsVisibility = (mode: ConnectionsVisibility) => {
+    setConnectionsVisibilityState(mode);
+    void persistConnectionsVisibility(mode);
+  };
+
+  const updateOrbitProfile = (update: Partial<OrbitProfile>) => {
+    setOrbitProfile((prev) => {
+      const next: OrbitProfile = {
+        ...prev,
+        ...update,
+      };
+      void persistOrbitProfile(next);
+      return next;
+    });
+  };
+
   const value: OrbitContextValue = {
     checkins,
     selectedMood,
@@ -241,6 +362,12 @@ export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
     getVenueCheckins,
     getRecentCheckins,
     setOnboardingComplete,
+
+    connectionsVisibility,
+    setConnectionsVisibility,
+
+    orbitProfile,
+    updateOrbitProfile,
   };
 
   return (

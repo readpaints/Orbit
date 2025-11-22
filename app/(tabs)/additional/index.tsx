@@ -1,208 +1,201 @@
 // app/(tabs)/additional/index.tsx
-import { Link } from 'expo-router';
-import React from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
 
-import { OrbitHeader } from '@/components/OrbitHeader';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import {
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
-const ACCENT = '#5FB49C';
-const ACCENT_MUTED = 'rgba(95,180,156,0.12)';
+const COLORS = {
+  cardBackground: 'rgba(0, 0, 0, 0.35)',
+  border: 'rgba(255, 255, 255, 0.18)',
+  softText: 'rgba(255, 255, 255, 0.8)',
+  softerText: 'rgba(255, 255, 255, 0.6)',
+  accent: '#9ECE9A',
+};
 
-export default function AdditionalRootScreen() {
+export default function MoreScreen() {
+  const router = useRouter();
+
   return (
-    <ThemedView
-      style={{
-        flex: 1,
-        backgroundColor: '#05090B', // match Venues / Map deep backdrop
-      }}
-    >
-      <OrbitHeader subtitle="account, about, settings" padded />
-
+    <ThemedView style={{ flex: 1 }}>
       <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: 44,
-          gap: 24,
-        }}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Intro card */}
-        <View
-          style={{
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: ACCENT,
-            paddingHorizontal: 16,
-            paddingVertical: 14,
-            backgroundColor: ACCENT_MUTED,
-          }}
-        >
-          <ThemedText
-            style={{
-              fontSize: 12,
-              letterSpacing: 2,
-              textTransform: 'uppercase',
-              marginBottom: 4,
-              opacity: 0.9,
-            }}
-          >
-            ORBIT
+        {/* Header */}
+        <View style={styles.header}>
+          <ThemedText type="title" style={styles.title}>
+            More
           </ThemedText>
-          <ThemedText
-            style={{
-              fontSize: 18,
-              fontWeight: '600',
-              marginBottom: 4,
-            }}
-          >
-            The back of the house
-          </ThemedText>
-          <ThemedText
-            style={{
-              fontSize: 13,
-              opacity: 0.85,
-            }}
-          >
-            A quieter corner for the practical parts of Orbit — your details,
-            the story behind the app, and the small switches that shape how it
-            feels.
+          <ThemedText style={styles.subtitle}>
+            The back of the house — quiet places for profiles, settings, and
+            the story of Orbit itself.
           </ThemedText>
         </View>
 
-        {/* Account */}
-        <SectionBlock title="Account">
-          <Link href="/(tabs)/additional/account" asChild>
-            <Pressable
-              style={({ pressed }) => ({
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: ACCENT,
-                marginBottom: 8,
-                backgroundColor: pressed ? ACCENT_MUTED : 'transparent',
-                opacity: pressed ? 0.95 : 1,
-              })}
-            >
-              <ThemedText
-                style={{
-                  fontSize: 14,
-                  fontWeight: '500',
-                  marginBottom: 2,
-                }}
-              >
-                Account →
-              </ThemedText>
-              <ThemedText
-                style={{
-                  fontSize: 12,
-                  opacity: 0.8,
-                }}
-              >
-                Where your name, email, and data live — kept simple, quiet, and
-                under your control.
-              </ThemedText>
-            </Pressable>
-          </Link>
-        </SectionBlock>
+        {/* Intro card */}
+        <View style={styles.card}>
+          <ThemedText style={styles.cardTitle}>
+            The back of the house
+          </ThemedText>
+          <ThemedText style={styles.cardText}>
+            Most of your time in Orbit happens in Home, Venues, Explore, and
+            the Journal. This tab is where you tune the lights behind the
+            scenes and read more about what this app is.
+          </ThemedText>
+        </View>
 
-        {/* About Orbit */}
-        <SectionBlock title="About Orbit">
-          <Link href="/(tabs)/additional/about" asChild>
-            <Pressable
-              style={({ pressed }) => ({
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.35)',
-                marginBottom: 8,
-                backgroundColor: pressed ? 'rgba(255,255,255,0.04)' : 'transparent',
-                opacity: pressed ? 0.95 : 1,
-              })}
-            >
-              <ThemedText
-                style={{
-                  fontSize: 14,
-                  fontWeight: '500',
-                  marginBottom: 2,
-                }}
-              >
-                About Orbit →
-              </ThemedText>
-              <ThemedText
-                style={{
-                  fontSize: 12,
-                  opacity: 0.8,
-                }}
-              >
-                How this little app came to be, and the people and places woven
-                into its orbit.
-              </ThemedText>
-            </Pressable>
-          </Link>
-        </SectionBlock>
+        {/* Navigation list */}
+        <View style={styles.listCard}>
+          {/* Account */}
+          <RowLink
+            label="Account"
+            description="Orbit profile and quiet details about you."
+            onPress={() => router.push('/(tabs)/additional/account')}
+          />
 
-        {/* Settings */}
-        <SectionBlock title="Settings">
-          <Link href="/(tabs)/additional/settings" asChild>
-            <Pressable
-              style={({ pressed }) => ({
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.35)',
-                marginBottom: 8,
-                backgroundColor: pressed ? 'rgba(255,255,255,0.04)' : 'transparent',
-                opacity: pressed ? 0.95 : 1,
-              })}
-            >
-              <ThemedText
-                style={{
-                  fontSize: 14,
-                  fontWeight: '500',
-                  marginBottom: 2,
-                }}
-              >
-                Settings →
-              </ThemedText>
-              <ThemedText
-                style={{
-                  fontSize: 12,
-                  opacity: 0.8,
-                }}
-              >
-                Small adjustments for theme, data, and future tools — just
-                enough to make Orbit feel like yours.
-              </ThemedText>
-            </Pressable>
-          </Link>
-        </SectionBlock>
+          {/* Connections & privacy */}
+          <RowLink
+            label="Connections & privacy"
+            description="Decide how visible your orbit is to others."
+            onPress={() => router.push('/(tabs)/additional/connections')}
+          />
+
+          {/* What Orbit Is */}
+          <RowLink
+            label="What Orbit Is"
+            description="A small manifesto about place, memory, and connection."
+            onPress={() => router.push('/(tabs)/explore/philosophy')}
+          />
+
+          {/* How Orbit Works */}
+          <RowLink
+            label="How Orbit works"
+            description="A gentle step-by-step explanation."
+            onPress={() => router.push('/(tabs)/explore/how-orbit-works')}
+          />
+
+          {/* Replay the introduction */}
+          <RowLink
+            label="Replay the introduction"
+            description="Walk back through the opening sequence of Orbit."
+            onPress={() => router.push('/onboarding')}
+          />
+
+          {/* About Orbit */}
+          <RowLink
+            label="About Orbit"
+            description="Where this little app comes from."
+            onPress={() => router.push('/(tabs)/additional/about')}
+          />
+
+          {/* Settings */}
+          <RowLink
+            label="Settings"
+            description="Future home for notifications, backups, and more."
+            onPress={() => router.push('/(tabs)/additional/settings')}
+          />
+        </View>
+
+        <View style={{ height: 32 }} />
       </ScrollView>
     </ThemedView>
   );
 }
 
-type SectionBlockProps = {
-  title: string;
-  children: React.ReactNode;
+type RowLinkProps = {
+  label: string;
+  description?: string;
+  onPress: () => void;
 };
 
-function SectionBlock({ title, children }: SectionBlockProps) {
+function RowLink({ label, description, onPress }: RowLinkProps) {
   return (
-    <View style={{ gap: 8 }}>
-      <ThemedText
-        style={{
-          fontSize: 16,
-          fontWeight: '600',
-        }}
-      >
-        {title}
-      </ThemedText>
-      {children}
-    </View>
+    <TouchableOpacity
+      style={styles.row}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      <View style={{ flex: 1 }}>
+        <ThemedText style={styles.rowLabel}>{label}</ThemedText>
+        {description ? (
+          <ThemedText style={styles.rowDescription}>
+            {description}
+          </ThemedText>
+        ) : null}
+      </View>
+      <ThemedText style={styles.chevron}>›</ThemedText>
+    </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 16,
+    gap: 16,
+  },
+  header: {
+    gap: 8,
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 24,
+    letterSpacing: 1.2,
+  },
+  subtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: COLORS.softText,
+  },
+  card: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
+    padding: 16,
+    gap: 8,
+  },
+  cardTitle: {
+    fontSize: 15,
+  },
+  cardText: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: COLORS.softText,
+  },
+  listCard: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
+    paddingVertical: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
+  },
+  rowLabel: {
+    fontSize: 14,
+  },
+  rowDescription: {
+    fontSize: 12,
+    color: COLORS.softerText,
+  },
+  chevron: {
+    fontSize: 20,
+    color: COLORS.softerText,
+  },
+});

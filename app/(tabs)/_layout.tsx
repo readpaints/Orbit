@@ -9,7 +9,8 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#ffffff',
         tabBarInactiveTintColor: '#999999',
         tabBarStyle: {
-          backgroundColor: '#000000',
+          // Orbit dusk: deep sea-green instead of pure black
+          backgroundColor: '#071D1C',
           borderTopWidth: 0,
         },
         tabBarLabelStyle: {
@@ -17,6 +18,7 @@ export default function TabsLayout() {
         },
       }}
     >
+      {/* 1. Home */}
       <Tabs.Screen
         name="index"
         options={{
@@ -24,20 +26,7 @@ export default function TabsLayout() {
         }}
       />
 
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-        }}
-      />
-
-      <Tabs.Screen
-        name="journal"
-        options={{
-          title: 'Journal',
-        }}
-      />
-
+      {/* 2. Venues */}
       <Tabs.Screen
         name="venues"
         options={{
@@ -45,10 +34,27 @@ export default function TabsLayout() {
         }}
       />
 
+      {/* 3. Explore */}
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+        }}
+      />
+
+      {/* 4. Journal */}
+      <Tabs.Screen
+        name="journal"
+        options={{
+          title: 'Journal',
+        }}
+      />
+
+      {/* 5. More (was Additional) */}
       <Tabs.Screen
         name="additional"
         options={{
-          title: 'Additional',
+          title: 'More',
         }}
       />
     </Tabs>

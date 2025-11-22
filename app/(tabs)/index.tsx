@@ -46,7 +46,9 @@ export default function HomeScreen() {
   // otherwise falls back to a calm default.
   const accentColor = useMemo(() => {
     const key =
-      (selectedMood && MOOD_COLORS[selectedMood]) ? MOOD_COLORS[selectedMood] : 'moss';
+      selectedMood && MOOD_COLORS[selectedMood]
+        ? MOOD_COLORS[selectedMood]
+        : 'moss';
     return PALETTE[key] ?? '#5FB49C';
   }, [selectedMood]);
 

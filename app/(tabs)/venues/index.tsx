@@ -86,7 +86,7 @@ export default function VenuesScreen() {
     <ThemedView
       style={{
         flex: 1,
-        backgroundColor: '#05090B', // deep, not-flat backdrop
+        // No local backgroundColor here – let Colors.ts + ThemedView decide
       }}
     >
       {/* Header without subtitle for this screen */}
