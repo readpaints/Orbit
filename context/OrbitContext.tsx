@@ -12,6 +12,7 @@ const STORAGE_KEYS = {
   CHECKINS: 'orbit:checkins',
   SELECTED_MOOD: 'orbit:selectedMood',
   ONBOARDING_COMPLETE: 'orbit:onboardingComplete',
+  CURIOUS_VENUES: 'orbit:curiousVenues',
 } as const;
 
 // You can refine these later if you like.
@@ -34,11 +35,18 @@ export interface OrbitContextValue {
   onboardingComplete: boolean;
   isHydrated: boolean;
 
+  // Curious venues (saved / starred)
+  curiousVenueIds: string[];
+  toggleCuriousVenue: (venueId: string) => void;
+  isCuriousVenue: (venueId: string) => boolean;
+
   // Mood controls
   setSelectedMood: (mood: MoodValue) => void;
 
   // Check-ins
-  addCheckin: (input: Omit<Checkin, 'id' | 'timestamp'> & { timestamp?: string }) => void;
+  addCheckin: (
+    input: Omit<Checkin, 'id' | 'timestamp'> & { timestamp?: string }
+  ) => void;
   clearQuickCheckinsForVenue: (venueId: string) => void;
   getVenueCheckins: (venueId: string) => Checkin[];
   getRecentCheckins: (limit?: number) => Checkin[];
@@ -56,21 +64,26 @@ interface ProviderProps {
 export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [selectedMood, setSelectedMoodState] = useState<MoodValue>(null);
-  const [onboardingComplete, setOnboardingCompleteState] = useState<boolean>(
-    false
-  );
+  const [onboardingComplete, setOnboardingCompleteState] =
+    useState<boolean>(false);
+  const [curiousVenueIds, setCuriousVenueIds] = useState<string[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
 
   // --- Hydration from AsyncStorage -----------------------------------------
   useEffect(() => {
     const hydrate = async () => {
       try {
-        const [storedCheckins, storedMood, storedOnboarding] =
-          await Promise.all([
-            AsyncStorage.getItem(STORAGE_KEYS.CHECKINS),
-            AsyncStorage.getItem(STORAGE_KEYS.SELECTED_MOOD),
-            AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETE),
-          ]);
+        const [
+          storedCheckins,
+          storedMood,
+          storedOnboarding,
+          storedCuriousVenues,
+        ] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.CHECKINS),
+          AsyncStorage.getItem(STORAGE_KEYS.SELECTED_MOOD),
+          AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETE),
+          AsyncStorage.getItem(STORAGE_KEYS.CURIOUS_VENUES),
+        ]);
 
         if (storedCheckins) {
           setCheckins(JSON.parse(storedCheckins));
@@ -82,6 +95,17 @@ export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
 
         if (storedOnboarding) {
           setOnboardingCompleteState(storedOnboarding === 'true');
+        }
+
+        if (storedCuriousVenues) {
+          try {
+            const parsed = JSON.parse(storedCuriousVenues);
+            if (Array.isArray(parsed)) {
+              setCuriousVenueIds(parsed.filter((id) => typeof id === 'string'));
+            }
+          } catch {
+            // ignore malformed data
+          }
         }
       } catch (err) {
         console.warn('OrbitContext: error hydrating state', err);
@@ -131,6 +155,18 @@ export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
     }
   };
 
+  const persistCuriousVenues = async (next: string[]) => {
+    setCuriousVenueIds(next);
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.CURIOUS_VENUES,
+        JSON.stringify(next)
+      );
+    } catch (err) {
+      console.warn('OrbitContext: error saving curious venues', err);
+    }
+  };
+
   // --- Public API -----------------------------------------------------------
 
   const setSelectedMood = (mood: MoodValue) => {
@@ -171,11 +207,34 @@ export const OrbitProvider: React.FC<ProviderProps> = ({ children }) => {
     void persistOnboardingComplete(complete);
   };
 
+  const toggleCuriousVenue = (venueId: string) => {
+    setCuriousVenueIds((current) => {
+      const set = new Set(current);
+      if (set.has(venueId)) {
+        set.delete(venueId);
+      } else {
+        set.add(venueId);
+      }
+      const next = Array.from(set);
+      void persistCuriousVenues(next);
+      return next;
+    });
+  };
+
+  const isCuriousVenue = (venueId: string): boolean => {
+    return curiousVenueIds.includes(venueId);
+  };
+
   const value: OrbitContextValue = {
     checkins,
     selectedMood,
     onboardingComplete,
     isHydrated,
+
+    curiousVenueIds,
+    toggleCuriousVenue,
+    isCuriousVenue,
+
     setSelectedMood,
     addCheckin,
     clearQuickCheckinsForVenue,

@@ -8,12 +8,28 @@ export type Venue = {
   neighborhood?: string;
   description?: string;
   tags?: string[];
+
+  // Optional coordinates — when present, this venue can appear as a pin on the map.
+  latitude?: number;
+  longitude?: number;
 };
 
 // 1) Your hand-curated venues live here.
 // For now this is empty so nothing breaks if you paste this before copying over your old data.
 // Later, you can take the venue objects from your previous VENUES array
-// and drop them into CORE_VENUES below.
+// and drop them into CORE_VENUES below, including latitude/longitude if you like.
+//
+// Example with coordinates:
+//
+// {
+//   id: 'acid-cafe',
+//   name: 'Acid Café',
+//   neighborhood: 'Lavapiés',
+//   description: 'Tiny corner café with good light, strong coffee, and slow afternoons.',
+//   tags: ['cafe', 'neighborhood'],
+//   latitude: 40.4071,
+//   longitude: -3.6993,
+// }
 
 // --------------------------------------------------------------
 // CORE VENUES (manually curated)
@@ -26,6 +42,8 @@ const CORE_VENUES: Venue[] = [
   //   neighborhood: 'Lavapiés',
   //   description: 'Tiny corner café with good light, strong coffee, and slow afternoons.',
   //   tags: ['cafe', 'neighborhood'],
+  //   latitude: 40.4071,
+  //   longitude: -3.6993,
   // },
 ];
 
@@ -46,8 +64,7 @@ function normalize(str?: string): string {
 // Ensures no duplicates across both core + seed venues.
 // --------------------------------------------------------------
 function mergeVenues(core: Venue[], seeds: Venue[]): Venue[] {
-
-  // 🔥 NEW GUARD (prevents “cannot convert undefined to object”)
+  // 🔥 Guard (prevents “cannot convert undefined to object”)
   if (!Array.isArray(seeds)) seeds = [];
   if (!Array.isArray(core)) core = [];
 

@@ -1,12 +1,46 @@
 // app/(tabs)/explore/map.tsx
 import { Link } from 'expo-router';
-import React from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import React, { useMemo } from 'react';
+import {
+    ActivityIndicator,
+    Pressable,
+    View,
+} from 'react-native';
+import MapView, { Marker, Region } from 'react-native-maps';
 
 import { OrbitHeader } from '@/components/OrbitHeader';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import Colors from '@/constants/Colors';
+import { VENUES, Venue } from '@/constants/venues';
+import { useOrbit } from '@/context/OrbitContext';
+import { useLocationService } from '@/hooks/useLocationService';
+
+const DEFAULT_REGION: Region = {
+  latitude: 40.4168, // Madrid center
+  longitude: -3.7038,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+};
+
+function distanceInKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371; // km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 export default function ExploreMapScreen() {
   const accent =
@@ -18,7 +52,6 @@ export default function ExploreMapScreen() {
     (Colors as any)?.dark?.muted ?? 'rgba(148, 163, 184, 0.6)';
 
   const dotVisited = accent;
-  const dotYou = '#60a5fa';
   const dotCurious = '#facc15';
   const dotSuggested = '#fb7185';
 
@@ -30,21 +63,102 @@ export default function ExploreMapScreen() {
     borderColor: accent,
   } as const;
 
+  const { checkins, curiousVenueIds } = useOrbit();
+  const {
+    locationPermission,
+    userLocation,
+    isRequesting,
+    error,
+    getOrRequestLocation,
+  } = useLocationService();
+
+  const hasLocation = locationPermission === 'granted' && !!userLocation;
+
+  const region: Region = useMemo(() => {
+    if (hasLocation && userLocation) {
+      return {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        latitudeDelta: 0.03,
+        longitudeDelta: 0.03,
+      };
+    }
+    return DEFAULT_REGION;
+  }, [hasLocation, userLocation]);
+
+  const visitedIds = useMemo(
+    () => new Set(checkins.map((c) => c.venueId)),
+    [checkins]
+  );
+  const curiousIds = useMemo(
+    () => new Set(curiousVenueIds),
+    [curiousVenueIds]
+  );
+
+  const visitedVenues: Venue[] = useMemo(() => {
+    if (!checkins.length) return [];
+    return VENUES.filter(
+      (v) =>
+        visitedIds.has(v.id) &&
+        typeof v.latitude === 'number' &&
+        typeof v.longitude === 'number'
+    );
+  }, [visitedIds]);
+
+  const curiousVenues: Venue[] = useMemo(() => {
+    if (!curiousVenueIds.length) return [];
+    return VENUES.filter(
+      (v) =>
+        curiousIds.has(v.id) &&
+        !visitedIds.has(v.id) &&
+        typeof v.latitude === 'number' &&
+        typeof v.longitude === 'number'
+    );
+  }, [curiousIds, visitedIds, curiousVenueIds.length]);
+
+  const suggestedVenues: Venue[] = useMemo(() => {
+    const candidates = VENUES.filter(
+      (v) =>
+        !visitedIds.has(v.id) &&
+        !curiousIds.has(v.id) &&
+        typeof v.latitude === 'number' &&
+        typeof v.longitude === 'number'
+    );
+
+    if (hasLocation && userLocation) {
+      const { latitude, longitude } = userLocation;
+      const withDistance = candidates.map((v) => ({
+        venue: v,
+        distance: distanceInKm(
+          latitude,
+          longitude,
+          v.latitude as number,
+          v.longitude as number
+        ),
+      }));
+      withDistance.sort((a, b) => a.distance - b.distance);
+      return withDistance.slice(0, 10).map((x) => x.venue);
+    }
+
+    return candidates.slice(0, 10);
+  }, [hasLocation, userLocation, visitedIds, curiousIds]);
+
   return (
     <ThemedView
       style={{
         flex: 1,
-        backgroundColor: '#05090B', // deep Orbit night, not flat black
+        backgroundColor: '#05090B', // deep Orbit night
       }}
     >
       <OrbitHeader subtitle="your places, from a little higher" padded />
 
-      <ScrollView
-        contentContainerStyle={{
+      <View
+        style={{
+          flex: 1,
           paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: 40,
-          gap: 20,
+          paddingBottom: 20,
+          paddingTop: 12,
+          gap: 12,
         }}
       >
         {/* Back buttons row */}
@@ -61,7 +175,9 @@ export default function ExploreMapScreen() {
                 ...pillBaseStyle,
                 flex: 1,
                 alignItems: 'center',
-                backgroundColor: pressed ? 'rgba(74, 222, 128, 0.12)' : 'transparent',
+                backgroundColor: pressed
+                  ? 'rgba(74, 222, 128, 0.12)'
+                  : 'transparent',
                 opacity: pressed ? 0.85 : 1,
               })}
             >
@@ -82,7 +198,9 @@ export default function ExploreMapScreen() {
                 ...pillBaseStyle,
                 flex: 1,
                 alignItems: 'center',
-                backgroundColor: pressed ? 'rgba(74, 222, 128, 0.12)' : 'transparent',
+                backgroundColor: pressed
+                  ? 'rgba(74, 222, 128, 0.12)'
+                  : 'transparent',
                 opacity: pressed ? 0.85 : 1,
               })}
             >
@@ -99,10 +217,10 @@ export default function ExploreMapScreen() {
         </View>
 
         {/* Title + description */}
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: 4 }}>
           <ThemedText
             style={{
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: '700',
             }}
           >
@@ -111,131 +229,239 @@ export default function ExploreMapScreen() {
 
           <ThemedText
             style={{
-              fontSize: 13,
-              lineHeight: 20,
+              fontSize: 12,
+              lineHeight: 18,
               opacity: 0.8,
             }}
           >
-            One day this will be a quiet sky of your places — pins for cafés,
-            galleries, bars, walks, and corners that keep calling you back. For
-            now, this is a small sketch of what that sky might feel like.
+            A growing sky of your places — cafés, galleries, bars, walks, and
+            corners that keep calling you back.
           </ThemedText>
         </View>
 
-        {/* Map placeholder card */}
-        <View
-          style={{
-            borderWidth: 1,
-            borderRadius: 24,
-            padding: 16,
-            borderColor: accent,
-          }}
-        >
+        {/* Location explainer only when we truly don't have location */}
+        {!hasLocation && (
           <View
             style={{
               borderWidth: 1,
-              borderStyle: 'dashed',
-              borderRadius: 20,
+              borderRadius: 14,
               borderColor: softBorder,
-              paddingVertical: 40,
-              paddingHorizontal: 12,
-              alignItems: 'center',
-              justifyContent: 'center',
+              padding: 10,
+              gap: 6,
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
             }}
           >
-            {/* Simple “starfield” dots */}
-            <View
+            <ThemedText
               style={{
-                position: 'absolute',
-                top: 18,
-                left: 40,
-                width: 6,
-                height: 6,
-                borderRadius: 999,
-                backgroundColor: accent,
+                fontSize: 12,
+                fontWeight: '500',
               }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                top: 32,
-                right: 36,
-                width: 4,
-                height: 4,
-                borderRadius: 999,
-                backgroundColor: dotSuggested,
-              }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                bottom: 26,
-                left: 60,
-                width: 5,
-                height: 5,
-                borderRadius: 999,
-                backgroundColor: dotCurious,
-              }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                bottom: 18,
-                right: 70,
-                width: 7,
-                height: 7,
-                borderRadius: 999,
-                backgroundColor: dotYou,
-              }}
-            />
+            >
+              Location & your orbit
+            </ThemedText>
 
             <ThemedText
               style={{
-                fontSize: 14,
-                textAlign: 'center',
-                lineHeight: 22,
+                fontSize: 11,
+                lineHeight: 17,
+                opacity: 0.8,
               }}
             >
-              Map view coming soon — each dot will become a place you know. Tap
-              a pin to see the details and ask, “Need directions?” so Orbit can
-              send you on your way.
+              Orbit can use your location to show nearby cafés, galleries, bars,
+              and walks that might feel like you. It&apos;s only used to center
+              the map and suggest places — never shared, never shown to other
+              people.
+            </ThemedText>
+
+            {error && (
+              <ThemedText
+                style={{
+                  fontSize: 11,
+                  color: '#f97373',
+                }}
+              >
+                {error}
+              </ThemedText>
+            )}
+
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: 2,
+                gap: 10,
+              }}
+            >
+              <Pressable
+                disabled={isRequesting}
+                onPress={() => {
+                  void getOrRequestLocation();
+                }}
+                style={({ pressed }) => ({
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: accent,
+                  backgroundColor: pressed
+                    ? 'rgba(74, 222, 128, 0.16)'
+                    : 'transparent',
+                  opacity: isRequesting ? 0.7 : 1,
+                })}
+              >
+                <ThemedText
+                  style={{
+                    fontSize: 11,
+                    fontWeight: '500',
+                  }}
+                >
+                  Enable location
+                </ThemedText>
+              </Pressable>
+
+              {isRequesting && (
+                <ActivityIndicator size="small" color={accent} />
+              )}
+            </View>
+
+            <ThemedText
+              style={{
+                fontSize: 10,
+                opacity: 0.7,
+                marginTop: 2,
+              }}
+            >
+              You can still wander this map without sharing your location. It
+              will simply start from a default view.
             </ThemedText>
           </View>
+        )}
 
-          {/* Legend */}
+        {/* Big map */}
+        <View
+          style={{
+            flex: 1,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: softBorder,
+            overflow: 'hidden',
+            marginTop: hasLocation ? 4 : 0,
+          }}
+        >
+          <MapView
+            style={{ flex: 1 }}
+            initialRegion={region}
+            showsUserLocation={hasLocation}
+          >
+            {/* Visited venues */}
+            {visitedVenues.map((venue) => (
+              <Marker
+                key={`visited-${venue.id}`}
+                coordinate={{
+                  latitude: venue.latitude as number,
+                  longitude: venue.longitude as number,
+                }}
+                title={venue.name}
+                description={venue.neighborhood}
+                pinColor={dotVisited}
+              />
+            ))}
+
+            {/* Curious venues */}
+            {curiousVenues.map((venue) => (
+              <Marker
+                key={`curious-${venue.id}`}
+                coordinate={{
+                  latitude: venue.latitude as number,
+                  longitude: venue.longitude as number,
+                }}
+                title={venue.name}
+                description={venue.neighborhood}
+                pinColor={dotCurious}
+              />
+            ))}
+
+            {/* Suggested venues */}
+            {suggestedVenues.map((venue) => (
+              <Marker
+                key={`suggested-${venue.id}`}
+                coordinate={{
+                  latitude: venue.latitude as number,
+                  longitude: venue.longitude as number,
+                }}
+                title={venue.name}
+                description={venue.neighborhood}
+                pinColor={dotSuggested}
+              />
+            ))}
+          </MapView>
+
+          {/* Floating legend */}
           <View
             style={{
+              position: 'absolute',
+              left: 10,
+              bottom: 10,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              borderRadius: 999,
+              backgroundColor: 'rgba(15, 23, 42, 0.85)',
               flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: 16,
-              marginTop: 16,
+              alignItems: 'center',
+              gap: 10,
             }}
           >
-            <LegendItem label="Visited" color={dotVisited} />
-            <LegendItem label="You" color={dotYou} />
-            <LegendItem label="Curious" color={dotCurious} />
-            <LegendItem label="Suggested" color={dotSuggested} />
-            <LegendItem label="Legend (coming later)" color={softBorder} />
+            <LegendDot label="visited" color={dotVisited} />
+            <LegendDot label="you" color="#60a5fa" />
+            <LegendDot label="curious" color={dotCurious} />
+            <LegendDot label="suggested" color={dotSuggested} />
+          </View>
+
+          {/* Tiny debug badge, top-right */}
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              right: 10,
+              top: 10,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 999,
+              backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            }}
+          >
+            <ThemedText
+              style={{
+                fontSize: 9,
+                opacity: 0.9,
+              }}
+            >
+              perm: {locationPermission} · loc:{' '}
+              {userLocation
+                ? `${userLocation.latitude.toFixed(
+                    3
+                  )}, ${userLocation.longitude.toFixed(3)}`
+                : 'none'}
+            </ThemedText>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </ThemedView>
   );
 }
 
-type LegendItemProps = {
+type LegendDotProps = {
   label: string;
   color: string;
 };
 
-function LegendItem({ label, color }: LegendItemProps) {
+function LegendDot({ label, color }: LegendDotProps) {
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: 4,
       }}
     >
       <View
@@ -248,8 +474,8 @@ function LegendItem({ label, color }: LegendItemProps) {
       />
       <ThemedText
         style={{
-          fontSize: 11,
-          opacity: 0.8,
+          fontSize: 10,
+          opacity: 0.85,
         }}
       >
         {label}

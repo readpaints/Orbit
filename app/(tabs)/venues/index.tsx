@@ -152,7 +152,8 @@ export default function VenuesScreen() {
             gap: 12,
           }}
         >
-          <Link href="/(tabs)/explore/map" asChild>
+          {/* Goes to the Venues map, not Explore map */}
+          <Link href="/(tabs)/venues/map" asChild>
             <Pressable
               style={({ pressed }) => ({
                 alignSelf: 'flex-start',
